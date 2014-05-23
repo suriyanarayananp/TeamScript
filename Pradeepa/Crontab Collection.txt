@@ -1,0 +1,67 @@
+###Zara UK List (10.40.52.74)
+08 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zara-UK--List.pl WOMAN
+09 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zara-UK--List.pl MAN
+10 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zara-UK--List.pl KIDS
+11 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zara-UK--List.pl TRF
+12 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zara-UK--List.pl SALE
+13 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zara-UK--List.pl MINI
+14 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zara-UK--List.pl "NEW THIS WEEK"
+
+###Topshop US List (10.40.52.74)
+31 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Topshop-US--List.pl "New In"
+32 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Topshop-US--List.pl Clothing
+33 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Topshop-US--List.pl Shoes
+34 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Topshop-US--List.pl "Bags & Accessories"
+35 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Topshop-US--List.pl "Make Up"
+36 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Topshop-US--List.pl "Sale & Offers"
+37 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Topshop-US--List.pl "Topshop Magazine"
+
+### Zara US List  (10.40.52.74)
+45 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zara-US--List.pl WOMAN
+46 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zara-US--List.pl MAN
+47 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zara-US--List.pl KIDS
+48 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zara-US--List.pl TRAFALUC
+49 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zara-US--List.pl SALE
+50 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zara-US--List.pl MINI
+51 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zara-US--List.pl "NEW THIS WEEK"
+
+######## Bhs UK List (10.40.52.75)
+20 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Bhs-UK--List.pl Women
+25 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Bhs-UK--List.pl "\bMen\b"
+30 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Bhs-UK--List.pl Children
+35 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Bhs-UK--List.pl Wedding
+40 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Bhs-UK--List.pl "Home, Lighting & Furniture"
+45 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Bhs-UK--List.pl Gifts
+50 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Bhs-UK--List.pl Offers
+
+######## Coaststores UK List (10.40.52.75)
+06 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Coaststores-UK--List.pl
+
+######## Forever List (10.40.52.75)
+08 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Forever21-US--List.pl "NEW ARRIVALS"
+16 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Forever21-US--List.pl WOMEN
+24 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Forever21-US--List.pl ACCESSORIES
+32 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Forever21-US--List.pl "LOVE21"
+40 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Forever21-US--List.pl "PLUS SIZES"
+48 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Forever21-US--List.pl "\bMEN\b"
+56 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Forever21-US--List.pl SALE
+57 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Forever21-US--List.pl GIRLS
+
+###H&M List & Detail (10.40.52.78)
+10 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Hm-UK--List.pl Ladies
+11 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Hm-UK--List.pl Men
+12 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Hm-UK--List.pl Kids
+13 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Hm-UK--List.pl Home
+14 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Hm-UK--List.pl Sale
+
+###Topshop UK List (10.40.52.78)
+10 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Topshop-UK--List.pl "New In"
+11 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Topshop-UK--List.pl Clothing
+12 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Topshop-UK--List.pl Shoes
+13 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Topshop-UK--List.pl "Bags & Accessories"
+14 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Topshop-UK--List.pl "Sale & Offers"
+16 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Topshop-UK--List.pl "Make Up"
+18 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Topshop-UK--List.pl "Topshop Magazine"
+
+### Tedbaker UK (10.40.52.78)
+#30 12 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Tedbaker-UK--List.pl

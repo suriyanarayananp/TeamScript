@@ -1,0 +1,48 @@
+### Peacocks UK
+10 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Peacocks-UK--List.pl
+
+### Net-a-porter UK
+16 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Net-a-porter-UK--List.pl
+
+### Asos UK
+17 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Asos-UK--List.pl Women "shop\s*by\s*product"
+19 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Asos-UK--List.pl Women "shop\s*by\s*edit"
+21 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Asos-UK--List.pl Men "shop\s*by\s*product"
+23 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Asos-UK--List.pl Men "most\s*popular"
+
+### Net-a-porter US
+15 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Net-a-porter-US--List.pl
+
+### Uniqlo UK
+#19 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Uniqlo-UK--List.pl
+
+####### StageStores US List & Detail
+07 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Stagestores-US--List.pl Women
+14 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Stagestores-US--List.pl Men
+21 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Stagestores-US--List.pl Juniors
+28 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Stagestores-US--List.pl "Baby & Kids"
+35 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Stagestores-US--List.pl Shoes
+42 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Stagestores-US--List.pl Beauty
+49 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Stagestores-US--List.pl "Handbags & Accessories"
+56 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Stagestores-US--List.pl Jewelry
+
+######## Simplybe UK List
+06 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Simplybe-UK--List.pl Fashion &
+12 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Simplybe-UK--List.pl Accessories &
+18 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Simplybe-UK--List.pl Lingerie &
+19 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Simplybe-UK--List.pl Shoes &
+21 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Simplybe-UK--List.pl Swimwear &
+22 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Simplybe-UK--List.pl Sports &
+23 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Simplybe-UK--List.pl Offers &
+
+### Matalan UK
+05 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Matalan-UK--List.pl
+
+### Asos US
+20 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Asos-US--List.pl Women "shop\s*by\s*product"
+22 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Asos-US--List.pl Women "shop\s*by\s*edit"
+23 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Asos-US--List.pl Men "shop\s*by\s*product"
+24 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Asos-US--List.pl Men "most\s*popular"
+
+### Jigsaw UK
+05 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Jigsaw-UK--List.pl
