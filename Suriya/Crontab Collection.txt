@@ -1,0 +1,157 @@
+####Abercrombie US List & Detail
+#06 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Abercrombie-US--List.pl
+#30 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Abercrombie-US--Detail.pl
+
+### Newlook UK
+00 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Newlook-UK--List.pl "new in" &
+01 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Newlook-UK--List.pl womens &
+02 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Newlook-UK--List.pl "shoes & accessories" &
+03 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Newlook-UK--List.pl maternity &
+04 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Newlook-UK--List.pl "plus size" &
+05 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Newlook-UK--List.pl mens &
+06 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Newlook-UK--List.pl teens &
+07 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Newlook-UK--List.pl sale &
+
+###### M&S UK List & Detail
+06 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Ms-UK--List.pl women
+10 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Ms-UK--List.pl men
+15 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Ms-UK--List.pl kids
+#35 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Ms-UK--Detail.pl
+
+##Zappos-US
+05 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zappos-US--List.pl "Clothing" "WOMEN'S CLOTHING"
+06 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zappos-US--List.pl "Shoes" "WOMEN'S SHOES"
+07 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zappos-US--List.pl "Clothing" "MEN'S CLOTHING"
+08 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zappos-US--List.pl "Clothing" "GIRLS' CLOTHING"
+09 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zappos-US--List.pl "Clothing" "BOYS' CLOTHING"
+10 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zappos-US--List.pl "Bags" "Shop All Bags"
+11 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zappos-US--List.pl "Bags" "Handbags"
+12 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zappos-US--List.pl "Bags" "SHOP CLEARANCE"
+13 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zappos-US--List.pl "Bags" "TRAVEL BAGS"
+14 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zappos-US--List.pl "Bags" "OUTDOOR BAGS"
+15 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zappos-US--List.pl "Bags" "WALLETS"
+16 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zappos-US--List.pl "Accessories" "Shop Accessories"
+17 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zappos-US--List.pl "Accessories" "Shop Hats"
+18 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zappos-US--List.pl "Accessories" "Shop Tech Accessories"
+19 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zappos-US--List.pl "Womens" "SHOP WOMEN'S"
+20 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zappos-US--List.pl "Womens" "Women's Clothing"
+21 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zappos-US--List.pl "Womens" "Women's Shoes"
+22 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zappos-US--List.pl "Womens" "Women's Sale"
+
+##Zalando
+## Women-Dress
+05 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-clothing-tops/" "Women" "Clothing" "Tops"
+08 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-clothing-lingerie-nightwear/" "Women" "Clothing" "Lingerie Nightwear"
+14 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-clothing-tights-socks/" "Women" "Clothing" "Tights Socks"
+16 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-clothing-blouses-tunics/" "Women" "Clothing" "Blouses Tunics"
+18 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-clothing-jackets/" "Women" "Clothing" "Jackets"
+10 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-clothing-swimwear/" "Women" "Clothing" "Swimwear"
+12 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-clothing-dresses/" "Women" "Clothing" "Dresses"
+14 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-clothing-skirts/" "Women" "Clothing" "Skirts"
+16 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-clothing-jeans/" "Women" "Clothing" "Jeans"
+18 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-clothing-trousers-leggings/" "Women" "Clothing" "Trousers Leggings"
+20 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-clothing-jumpers-cardigans/" "Women" "Clothing" "Jumpers Cardigans"
+22 0 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-clothing-coats/" "Women" "Clothing" "Coats"
+## Women-Shoes
+24 0 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-shoes-ankle-boots/" "Women" "Shoes" "Ankle Boots"
+26 0 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-shoes-ballet-pumps/" "Women" "Shoes" "Ballet Pumps"
+28 0 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-shoes-boots/" "Women" "Shoes" "Boots"
+30 0 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-shoes-heels/" "Women" "Shoes" "Heels"
+32 0 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-shoes-flats-lace-ups/" "Women" "Shoes" "Flats Lace-Ups"
+34 0 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/flip-flops-beach-shoes/" "Women" "Shoes" "Flip Flops Beach Shoes"
+38 0 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-shoes-mules-clogs/" "Women" "Shoes" "Mules Clogs"
+40 0 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-shoes-sandals/" "Women" "Shoes" "Sandals"
+42 0 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-shoes-slippers/" "Women" "Shoes" "Slippers"
+44 0 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-shoes-trainers/" "Women" "Shoes" "Trainers"
+## Women-Accessories
+46 0 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/bags-accessories-womens-bags/" "Women" "Accessories" "Bags"
+48 0 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/bags-accessories-womens-belts/" "Women" "Accessories" "Belts"
+50 0 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/purses/" "Women" "Accessories" "Purses"
+00 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-gloves/" "Women" "Accessories" "Gloves"
+02 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-hats-caps/" "Women" "Accessories" "Hats Caps"
+04 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-headphones/" "Women" "Accessories" "Headphones"
+06 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/bags-accessories-womens-jewellery/" "Women" "Accessories" "Jewellery"
+08 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/bags-accessories-womens-other/" "Women" "Accessories" "Other"
+10 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/bags-accessories-womens-scarves-shawls/" "Women" "Accessories" "Scarves Shawls"
+12 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-sunglasses/" "Women" "Accessories" "Sunglasses"
+
+## Women-Sale
+14 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-shoes-sale/" "Women" "Sale" "Shoes"
+16 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-clothing-sale/" "Women" "Sale" "Clothing"
+18 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/sports-womens-sale/" "Women" "Sale" "Sports"
+20 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/womens-accessories-sale/" "Women" "Sale" "Accessories"
+22 1 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/premium-womens-sale/" "Women" "Sale" "Premium"
+
+## MEN-Dress
+24 1 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-clothing-coats/" "Men" "Clothing" "Coats"
+26 1 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-clothing-jeans/" "Men" "Clothing" "Jeans"
+28 1 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-clothing-jackets/" "Men" "Clothing" "Jackets"
+30 1 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-clothing-jumpers-cardigans/" "Men" "Clothing" "Jumpers Cardigans"
+32 1 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-clothing-shirts/" "Men" "Clothing" "Shirts"
+34 1 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-clothing-socks/" "Men" "Clothing" "Socks"
+38 1 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-clothing-suits-ties/" "Men" "Clothing" "Suits Ties"
+40 1 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-clothing-swimwear/" "Men" "Clothing" "Swimwear"
+00 2 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-clothing-t-shirts/" "Men" "Clothing" "T-Shirts"
+02 2 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-clothing-trousers-chinos/" "Men" "Clothing" "Trousers Chinos"
+04 2 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-clothing-underwear/" "Men" "Clothing" "Underwear"
+## Men-Shoes
+06 2 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-shoes-boots/" "Men" "Shoes" "Boots"
+08 2 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-shoes-business-shoes/" "Men" "Shoes" "Business Shoes"
+10 2 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-shoes-flat-shoes/" "Men" "Shoes" "Flat Shoes"
+12 2 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-shoes-sandals/" "Men" "Shoes" "Sandals"
+18 2 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-shoes-slides-clogs/" "Men" "Shoes" "Slip-OnsClogs"
+20 2 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-shoes-slippers/" "Men" "Shoes" "Slippers"
+22 2 * * * /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-shoes-trainers/" "Men" "Shoes" "Trainers"
+##MEN_ACCEssories
+24 2 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/bags-accessories-mens-bags/" "Men" "Accessories" "Bags"
+26 2 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/bags-accessories-mens-belts/" "Men" "Accessories" "Belts"
+28 2 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/wallets/" "Men" "Accessories" "Wallets"
+30 2 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-gloves/" "Men" "Accessories" "Gloves"
+32 2 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-hats-caps/" "Men" "Accessories" "Hats Caps"
+34 2 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-headphones/" "Men" "Accessories" "Headphones"
+36 2 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/bags-accessories-mens-jewellery/" "Men" "Accessories" "Jewellery"
+38 2 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/bags-accessories-mens-other/" "Men" "Accessories" "Other"
+40 2 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-scarves/" "Men" "Accessories" "Scarves"
+42 2 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-sunglasses/" "Men" "Accessories" "Sunglasses"
+44 2 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-accessories-ties-accessories/" "Men" "Accessories" "Ties Accessories"
+
+##MEN_Sale
+00 3 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-shoes-sale/" "Men" "Sale" "Shoes"
+02 3 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-clothing-sale/" "Men" "Sale" "Clothing"
+04 3 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/sports-mens-sale/" "Men" "Sale" "Sports"
+06 3 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/mens-accessories-sale/" "Men" "Sale" "Accessories"
+08 3 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/premium-mens-sale/" "Men" "Sale" "Premium"
+##KIDS_DRESS
+10 3 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/babies-clothing-baby-gifts/" "Kids" "Clothing" "Baby Gifts"
+12 3 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/kids-clothing-dresses/" "Kids" "Clothing" "Dresses"
+14 3 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/kids-clothing-jackets/" "Kids" "Clothing" "Jackets"
+16 3 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/kids-clothing-jumpers-knitwear/" "Kids" "Clothing" "Jumpers Knitwear"
+18 3 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/kids-clothing-shirts-tops/" "Kids" "Clothing" "Shirts Tops"
+20 3 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/kids-clothing-shirts-tops/" "Kids" "Clothing" "Skirts"
+22 3 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/kids-clothing-trousers-jeans/" "Kids" "Clothing" "Trousers Jeans"
+24 3 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/kids-clothing-socks-tights/" "Kids" "Clothing" "Socks Tights"
+26 3 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/kids-clothing-swimwear/" "Kids" "Clothing" "Swimwear"
+28 3 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/kids-clothing-underwear-nightwear/" "Kids" "Clothing" "Underwear Nightwear"
+## KIDS-Shoes
+30 3 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/kids-shoes-ballet-pumps/" "Kids" "Shoes" "Ballet Pumps"
+32 3 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/kids-shoes-boots/" "Kids" "Shoes" "Boots"
+34 3 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/kids-shoes-crawlers-first-walkers/" "Kids" "Shoes" "Crawlers First Walkers"
+36 3 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/kids-shoes-shoes/" "Kids" "Shoes" "Low Shoes"
+38 3 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/kids-shoes-slippers/" "Kids" "Shoes" "Slippers"
+40 3 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/kids-shoes-trainers/" "Kids" "Shoes" "Trainers"
+##KIDS-Accessories
+00 4 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/bags-accessories-childrens-babies/" "Kids" "Accessories" "Baby Accessories"
+02 4 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/babies-baby-gifts/" "Kids" "Accessories" "Baby Gifts"
+04 4 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/kids-bags-rucksacks/" "Kids" "Accessories" "Bags Rucksacks"
+06 4 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/kids-belts/" "Kids" "Accessories" "Belts"
+08 4 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/kids-gloves/" "Kids" "Accessories" "Gloves"
+10 4 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/kids-hats-caps/" "Kids" "Accessories" "Hats Caps"
+12 4 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/teens-headphones/" "Kids" "Accessories" "Headphones"
+14 4 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/kids-scarves-shawls/" "Kids" "Accessories" "Scarves Shawls"
+##KIDS_Sale
+16 4 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/childrens-shoes-sale/" "Kids" "Sale" "Shoes"
+18 4 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/childrens-clothing-sale/" "Kids" "Sale" "Clothing"
+20 4 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/sports-kids-sale/" "Kids" "Sale" "Sports"
+22 4 * * *  /opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Zalando-UK--List.pl "http://www.zalando.co.uk/childrens-accessories-sale/" "Kids" "Sale" "Accessories"
+
+
