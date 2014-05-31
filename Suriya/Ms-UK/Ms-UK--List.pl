@@ -62,8 +62,9 @@ my $retailer_id=&DBIL::Objectkey_Checking($select_query, $dbh, $robotname);
 #ROBOT START PROCESS TIME STORED INTO RETAILER TABLE FOR RUNTIME MANIPULATION
 &DBIL::RetailerUpdate($retailer_id,$excuetionid,$dbh,$robotname,'start');
 
+my $retailer_name1='m&s-uk';
 #################### For Dashboard #######################################
-DBIL::Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'START',$robotname);
+DBIL::Save_mc_instance_Data($retailer_name1,$retailer_id,$pid,$ip,'START',$robotname);
 #################### For Dashboard #######################################
 my %validate;
 
@@ -289,7 +290,7 @@ sub db_insert()
 }
 
 ################### For Dashboard #######################################
-DBIL::Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'STOP',$robotname);
+DBIL::Save_mc_instance_Data($retailer_name1,$retailer_id,$pid,$ip,'STOP',$robotname);
 ################### For Dashboard #######################################
 
 sub lwp_get(){ # FETCH SOURCE PAGE CONTENT FOR THE GIVEN URL
