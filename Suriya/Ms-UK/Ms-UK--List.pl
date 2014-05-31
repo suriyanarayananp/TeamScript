@@ -1,267 +1,353 @@
 #!/opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl
-###### Module Initialization ##############
+########## MODULE INITIALIZATION ###########
+
 use strict;
+use POSIX;
+use HTTP::Cookies;
 use LWP::UserAgent;
 use HTML::Entities;
-use URI::URL;
-use HTTP::Cookies;
-use DBI;
+use WWW::Mechanize;
+use URI::Escape;
+use LWP::Simple;
+use Encode qw(encode);
 use DateTime;
-#require "/opt/home/merit/Merit_Robots/DBIL.pm";
-require "/opt/home/merit/Merit_Robots/DBILv2/DBIL.pm";
+require "/opt/home/merit/Merit_Robots/DBILv2/DBIL.pm"; # USER DEFINED MODULE DBIL.PM
+
 ###########################################
 
-#### Variable Initialization ##############
-my $robotname = $0;
-$robotname =~ s/\.pl//igs;
-$robotname =$1 if($robotname =~ m/[^>]*?\/*([^\/]+?)\s*$/is);
+######### VARIABLE INITIALIZATION ##########
+
+my $robotname=$0;
+$robotname=~s/\.pl//igs;
+$robotname =$1 if($robotname=~m/[^>]*?\/*([^\/]+?)\s*$/is);
 my $retailer_name=$robotname;
-$retailer_name =~ s/\-\-List\s*$//igs;
-$retailer_name = lc($retailer_name);
+$retailer_name=~s/\-\-List\s*$//igs;
+$retailer_name=lc($retailer_name);
 my $Retailer_Random_String='Msu';
-my $pid = $$;
-my $ip = `/sbin/ifconfig eth0 | grep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`;
-$ip = $1 if($ip =~ m/inet\s*addr\:([^>]*?)\s+/is);
-my $excuetionid = $ip.'_'.$pid;
-###########################################
+my $pid=$$;
+my $ip=`/sbin/ifconfig eth0 | grep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`;
+$ip=$1 if($ip=~m/inet\s*addr\:([^>]*?)\s+/is);
+my $excuetionid=$ip.'_'.$pid;
 
-############ Proxy Initialization #########
-my $country = $1 if($robotname =~ m/\-([A-Z]{2})\-\-/is);
-DBIL::ProxyConfig($country);
-###########################################
+#############################################
 
-##########User Agent######################
+######### PROXY INITIALIZATION ##############
+my $country=$1 if($robotname=~m/\-([A-Z]{2})\-\-/is);
+&DBIL::ProxyConfig($country);
+#############################################
+
+######### USER AGENT #######################
+
 my $ua=LWP::UserAgent->new(show_progress=>1);
 $ua->agent("Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 (.NET CLR 3.5.30729)");
 $ua->timeout(30); 
 $ua->cookie_jar({});
 $ua->env_proxy;
-###########################################
 
-############Cookie File Creation###########
-my ($cookie_file,$retailer_file) = DBIL::LogPath($robotname);
-my $cookie = HTTP::Cookies->new(file=>$cookie_file,autosave=>1); 
+############################################
+
+######### COOKIE FILE CREATION ############
+my ($cookie_file,$retailer_file)=&DBIL::LogPath($robotname);
+my $cookie=HTTP::Cookies->new(file=>$cookie_file,autosave=>1); 
 $ua->cookie_jar($cookie);
-###########################################
+############################################
 
-############Database Initialization########
-my $dbh = DBIL::DbConnection();
-###########################################
+######### ESTABLISHING DB CONNECTION #######
+my $dbh=&DBIL::DbConnection();
+############################################
+ 
+my $select_query="select ObjectKey from Retailer where name=\'m&s-uk\'";
+my $retailer_id=&DBIL::Objectkey_Checking($select_query, $dbh, $robotname);
 
-my $select_query = "select ObjectKey from Retailer where name=\'m&s-uk\'";
-my $retailer_id = DBIL::Objectkey_Checking($select_query, $dbh, $robotname);
-my %hash_id;
-DBIL::RetailerUpdate($retailer_id,$excuetionid,$dbh,$robotname,'start');
+#ROBOT START PROCESS TIME STORED INTO RETAILER TABLE FOR RUNTIME MANIPULATION
+&DBIL::RetailerUpdate($retailer_id,$excuetionid,$dbh,$robotname,'start');
 
-my $retailer_name1='m&s-uk';
 #################### For Dashboard #######################################
-DBIL::Save_mc_instance_Data($retailer_name1,$retailer_id,$pid,$ip,'START',$robotname);
+DBIL::Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'START',$robotname);
 #################### For Dashboard #######################################
+my %validate;
 
+my $url = "http://www.marksandspencer.com/";
+my $content = &lwp_get($url);
+###### <-- LIST ROBOT - BEGIN --> ########
 
-my $url='http://www.marksandspencer.com/';
-my $content = lwp_get($url);
-
-while($content=~m/<a[^>]*?data\-analyticsid\=\"[^>]*?\"\s*id\=\'[^>]*?\'\s*href\=\"([^>]*?)\">\s*<span>\s*($ARGV[0])\s*<\/span>/igs)
+while($content =~ m/class\=\"mega\-trigger\"\s*>\s*<a[^>]*?href\=\"([^>]*?)\">\s*<span>\s*($ARGV[0])\s*<\/span>/igs) ## Main Menu Regex
 {
-	my $menu_1_url=$1;
-	my $menu_1=$2;
-	my $menu_1_content=lwp_get($menu_1_url);
+	my $listurl = $1;
+	my $menu1 = &clean($2);  ##Women
+	#next unless($menu1 =~ m/Women/is);
+	my $menu_1_content = &lwp_get($listurl);
+	
 	my @menu2;
-	if($menu_1_content=~m/<ul\s*class\=\"tabs\">\s*([\w\W]*?)\s*<\/ul>/is)
+	if($menu_1_content=~m/<div\s*class\=\"controls\s*g12\">\s*([\w\W]*?)\s*<\/div>\s*<\/div>/is)
 	{
 		my $menu_1_block=$1;
 		while($menu_1_block=~m/<a[^>]*?href\=\"\#\"\s*data\-analyticsid\=\"[^>]*?\">\s*([^>]*?)\s*<\/a>/igs)
 		{
-			my $menu_2=DBIL::Trim($1);
-			push(@menu2,$menu_2);
+			my $menu_2=&clean($1);
+			push(@menu2,$menu_2);   ###Clothing., Shoes & Accessories,,, Bra soon...
 		}
 	}
-	my $i=0;
-	while($menu_1_content=~m/<div\s*class\=\"shop\-nav\">\s*([\w\W]*?)\s*<\/ul>\s*<\/div>/igs)
+	my $i = 0;
+	while($menu_1_content =~ m/<li\s*class\=\"[^>]*?\s*panel\"\s*role\=\"tabpanel\">\s*([\w\W]*?)\s*<\/div>\s*<\/li>/igs)
 	{
-		my $menu_3_block=$1;
-		my $menu_2=$menu2[$i];		
-		while($menu_3_block=~m/<a[^>]*?href\=\"([^>]*?)\"\s*data\-analyticsid\=\"[^>]*?\"[^>]*?>\s*([^>]*?)\s*<\/a>/igs)
+		my $menu1block = $1;
+		while($menu1block =~ m/<h2>\s*([\w\W]*?)\s*<\/h2>([\w\W]*?)<\/div>\s*<\/div>/igs)
 		{
-			my $menu_3_url=$1;
-			my $menu_3=DBIL::Trim($2);
-			my $menu_3_content=lwp_get($menu_3_url);			
-			my $url_append;
-			if($menu_3_content=~m/<form\s*class\=\"listing\-sort\"\s*id\=\"listing\-sort\-top\"\s*action\=\"([^>]*?)\"\s*data\-components\=[^>]*?>/is)
+			my $menu3 = &clean($1);    ##### Categories, Explore our brand
+			my $menu1block2 = $2;
+			while($menu1block2 =~ m/href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<\/a>/igs)
 			{
-				$url_append=$1;
-				$url_append=~s/\&\#x3a\;/\:/igs;
-				$url_append=~s/\&\#x2f\;/\//igs;
-				$url_append=~s/\&\#x3f\;/\?/igs;
-				$url_append=~s/\&\#x3d\;/\=/igs;
-				$url_append=~s/\&amp\;/\&/igs;
-			}
-			NextPage4:
-			while($menu_3_content=~m/itemprop\=\"url\"\s*href\=\"([^>]*?)\">\s*[^>]*?\s*<\/a>\s*<\/h3>/igs)
-			{
-				my $product_url=$1;
-				$product_url=~s/\&\#x3a\;/\:/igs;
-				$product_url=~s/\&\#x2f\;/\//igs;
-				$product_url=~s/\&\#x3f\;/\?/igs;
-				$product_url=~s/\&\#x3d\;/\=/igs;					
-				$product_url=$1 if($product_url=~m/([^>]*?)\?/is);				
+				my $listurl2 = $1;
+				my $menu4 = &clean($2);  ## New IN, Blazers, Cashmers....
+				my $menu2content = &lwp_get($listurl2);
 				
-				print "$menu_1 :: $menu_2 :: $menu_3\n";
-				my $product_object_key = DBIL::SaveProduct($product_url,$dbh,$robotname,$retailer_id,$Retailer_Random_String,$excuetionid);				
-				DBIL::SaveTag('Menu_1',$menu_1,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
-				DBIL::SaveTag('Menu_2',$menu_2,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
-				DBIL::SaveTag('Menu_3',$menu_3,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
-				$dbh->commit();
-			}
-			if($menu_3_content=~m/<li>\s*<a\s*href\s*=\"\#link\"\s*class\=\"next\"\s*name\=\"page\"\s*data\-update\-hidden\=\"pageChoice\"\s*data\-auto\-post\=\"click\"\s*data\-value\=\"(\d+)\"\s*>\s*Next\s*<\/a>\s*<\/li>/is)
-			{
-				my $page_no=$1;
-				my $next_page_url=$url_append.'&display=product&resultsPerPage=24&pageChoice='.$page_no;
-				$menu_3_content=lwp_get($next_page_url);
-				goto NextPage4;
-			}
-			while($menu_3_content=~m/<div\s*class\=\"head\">\s*<a\s*href\=\"\#\"\s*class\=\"heading\s*open\">\s*((?!Size|Price|Rating|Gender)[^>]*?)\s*<\/a>\s*([\w\W]*?)\s*<\/div>\s*<\/fieldset>/igs)
-			{
-				my $filter=DBIL::Trim($1);						
-				my $filter_block=$2;					
-				$filter=~s/\&\#x28\;/\(/igs;
-				$filter=~s/\&\#x29\;/\)/igs;					
-				while($filter_block=~m/<input\s*type\=\"checkbox\"\s*data\-components\=\'\[\"checkable\"\]\'\s*data\-auto\-post\=\"change\"\s*id\=\"generic\-\d+\"\s*name\=\"([^>]*?)\"\s*class\=\"checked\"\s*\/>\s*<label\s*class\=\"checkbox\-label\"\s*for\=\"generic\-\d+\">\s*<span\s*class\=\"filterOption\">\s*([^>]*?)\s*<\/span>/igs)
+				if($menu2content =~ m/<div\s*class\=\"inner\-box\">([\w\W]*?<\/ul>\s*)<\/div>\s*<\/div>\s*<\/div>\s*<\/div>\s*<div\s*class\=\"control\-bar\-wrapper\">/is)
 				{
-					my $filter_pass=$1;
-					my $filter_value=$2;
-					my $filter_url=$url_append.'&'.$filter_pass.'=on'."&display=product&cachedFilters=".$filter_pass."+0+40+0+40+product+24";					
-					my $filter_content=lwp_get($filter_url);
-					NextPage1:
-					while($filter_content=~m/itemprop\=\"url\"\s*href\=\"([^>]*?)\">\s*[^>]*?\s*<\/a>\s*<\/h3>/igs)
+					my $menu2subcat = $1;
+					while($menu2subcat =~ m/href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<\/a>/igs)
 					{
-						my $product_url=$1;
-						$product_url=~s/\&\#x3a\;/\:/igs;
-						$product_url=~s/\&\#x2f\;/\//igs;
-						$product_url=~s/\&\#x3f\;/\?/igs;
-						$product_url=~s/\&\#x3d\;/\=/igs;							
-						$product_url=$1 if($product_url=~m/([^>]*?)\?/is);
+						my $listurl3 = $1;
+						my $menu5 = &clean($2);  ## Shoes & Sandals, Clothing, Bags & Accessories.
+						my $menu3content = &lwp_get($listurl3);
 						
-						print "$menu_1 :: $menu_2 :: $menu_3 :: $filter($filter_value)\n";
-						my $product_object_key = DBIL::SaveProduct($product_url,$dbh,$robotname,$retailer_id,$Retailer_Random_String,$excuetionid);				
-						DBIL::SaveTag('Menu_1',$menu_1,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
-						DBIL::SaveTag('Menu_2',$menu_2,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
-						DBIL::SaveTag('Menu_3',$menu_3,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
-						DBIL::SaveTag($filter,$filter_value,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
-						$dbh->commit();
-					}
-					if($filter_content=~m/<li>\s*<a\s*href\s*=\"\#link\"\s*class\=\"next\"\s*name\=\"page\"\s*data\-update\-hidden\=\"pageChoice\"\s*data\-auto\-post\=\"click\"\s*data\-value\=\"(\d+)\"\s*>\s*Next\s*<\/a>\s*<\/li>/is)
-					{
-						my $page_no=$1;
-						my $next_page_url=$filter_url.'&display=product&resultsPerPage=24&pageChoice='.$page_no;
-						$filter_content=lwp_get($next_page_url);
-						goto NextPage1;
+						if($menu3content =~ m/<div\s*class\=\"inner\-box\">([\w\W]*?)<\/div>\s*<\/div>/is)
+						{
+							my $menu3subcat = $1;
+							while($menu3subcat =~ m/href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<\/a>/igs)
+							{
+								my $listurl4 = $1;
+								my $menu6 = &clean($2);  ## Shoes.
+								my $menu4content = &lwp_get($listurl4);
+								
+								&URL_Collection($menu4content, $menu1, $menu2[$i], $menu3, $menu4, $menu5, $menu6);
+							}
+						}
+						else
+						{
+							&URL_Collection($menu3content, $menu1, $menu2[$i], $menu3, $menu4, $menu5, '');
+						}
 					}
 				}
-				while($filter_block=~m/<input\s*type\=\"checkbox\"\s*data\-components\=\'\[\"checkable\"\]\'\s*data\-auto\-post\=\"change\"\s*id\=\"[^>]*?\"\s*name\=\"([^>]*?)\"\s*\/>\s*<label\s*class\=\"color\-facet checkbox\-label\"\s*for\=\"[^>]*?\">\s*<span\s*class\=\"filterOption\s*hidden\">\s*\&nbsp\;\s*([^>]*?)\s*<\/span>/igs)
+				else
 				{
-					my $filter_pass=$1;
-					my $filter_value=$2;
-					# my $filter_url=$url_append.'&'.$filter_pass.'=on';					
-					my $filter_url=$url_append.'&'.$filter_pass.'=on'."&display=product&cachedFilters=".$filter_pass."+0+40+0+40+product+24";
-					my $filter_content=lwp_get($filter_url);
-					NextPage2:
-					while($filter_content=~m/itemprop\=\"url\"\s*href\=\"([^>]*?)\">\s*[^>]*?\s*<\/a>\s*<\/h3>/igs)
-					{
-						my $product_url=$1;
-						$product_url=~s/\&\#x3a\;/\:/igs;
-						$product_url=~s/\&\#x2f\;/\//igs;
-						$product_url=~s/\&\#x3f\;/\?/igs;
-						$product_url=~s/\&\#x3d\;/\=/igs;							
-						$product_url=$1 if($product_url=~m/([^>]*?)\?/is);
-						
-						print "$menu_1 :: $menu_2 :: $menu_3 :: $filter($filter_value)\n";
-						my $product_object_key = DBIL::SaveProduct($product_url,$dbh,$robotname,$retailer_id,$Retailer_Random_String,$excuetionid);				
-						DBIL::SaveTag('Menu_1',$menu_1,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
-						DBIL::SaveTag('Menu_2',$menu_2,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
-						DBIL::SaveTag('Menu_3',$menu_3,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);					
-						DBIL::SaveTag($filter,$filter_value,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
-						$dbh->commit();
-					}
-					if($filter_content=~m/<li>\s*<a\s*href\s*=\"\#link\"\s*class\=\"next\"\s*name\=\"page\"\s*data\-update\-hidden\=\"pageChoice\"\s*data\-auto\-post\=\"click\"\s*data\-value\=\"(\d+)\"\s*>\s*Next\s*<\/a>\s*<\/li>/is)
-					{
-						my $page_no=$1;
-						my $next_page_url=$filter_url.'&display=product&resultsPerPage=24&pageChoice='.$page_no;
-						$filter_content=lwp_get($next_page_url);
-						goto NextPage2;
-					}
-				}
-				while($filter_block=~m/<input\s*type\=\"radio\"\s*data\-components\=\'\[\"checkable\"\]\'\s*value\=\"([^>]*?)\"\s*data\-auto\-post\=\"change\"\s*id\=\"radioId\-\d+\"\s*name\=\"([^>]*?)\"\s*\/>\s*<label\s*class\=\"radio\-label\"\s*for\=\"radioId\-\d+\">\s*<span\s*class\=\"filterOption\">\s*([^>]*?)\s*<\/span>/igs)
-				{
-					my $filter_pass=$2.'='.$1;
-					my $filter_value=$3;
-					# my $filter_url=$url_append.'&'.$filter_pass;					
-					my $filter_url=$url_append.'&'.$filter_pass.'=on'."&display=product&cachedFilters=".$filter_pass."+0+40+0+40+product+24";
-					my $filter_content=lwp_get($filter_url);
-					NextPage3:
-					while($filter_content=~m/itemprop\=\"url\"\s*href\=\"([^>]*?)\">\s*[^>]*?\s*<\/a>\s*<\/h3>/igs)
-					{
-						my $product_url=$1;
-						$product_url=~s/\&\#x3a\;/\:/igs;
-						$product_url=~s/\&\#x2f\;/\//igs;
-						$product_url=~s/\&\#x3f\;/\?/igs;
-						$product_url=~s/\&\#x3d\;/\=/igs;							
-						$product_url=$1 if($product_url=~m/([^>]*?)\?/is);
-						
-						print "$menu_1 :: $menu_2 :: $menu_3 :: $filter($filter_value)\n";
-						my $product_object_key = DBIL::SaveProduct($product_url,$dbh,$robotname,$retailer_id,$Retailer_Random_String,$excuetionid);				
-						DBIL::SaveTag('Menu_1',$menu_1,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
-						DBIL::SaveTag('Menu_2',$menu_2,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
-						DBIL::SaveTag('Menu_3',$menu_3,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
-						DBIL::SaveTag($filter,$filter_value,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
-						$dbh->commit();
-					}
-					if($filter_content=~m/<li>\s*<a\s*href\s*=\"\#link\"\s*class\=\"next\"\s*name\=\"page\"\s*data\-update\-hidden\=\"pageChoice\"\s*data\-auto\-post\=\"click\"\s*data\-value\=\"(\d+)\"\s*>\s*Next\s*<\/a>\s*<\/li>/is)
-					{
-						my $page_no=$1;
-						my $next_page_url=$filter_url.'&display=product&resultsPerPage=24&pageChoice='.$page_no;
-						$filter_content=lwp_get($next_page_url);
-						goto NextPage3;
-					}
+					&URL_Collection($menu2content, $menu1, $menu2[$i], $menu3, $menu4, '', '');
 				}
 			}
 		}
 		$i++;
+	}	
+}
+
+sub URL_Collection()
+{
+	my ($menu_3_content, $menu_1, $menu_2, $menu_3, $menu_4, $menu_5, $menu_6) = @_;
+	my $url_append;
+	if($menu_3_content=~m/<form\s*class\=\"listing\-sort\"\s*id\=\"listing\-sort\-top\"\s*action\=\"([^>]*?)\"\s*data\-components\=[^>]*?>/is)
+	{
+		$url_append = decode_entities($1);
+	}
+	if($menu_3_content =~ m/div\s*class\=\"head\">\s*<a\s*href\=\"\#\"\s*class\=\"heading\s*open\">\s*((?!Size|Price|Rating|Gender)[^>]*?)\s*<\/a>\s*([\w\W]*?)\s*<\/div>\s*<\/fieldset>/is)
+	{
+		while($menu_3_content=~m/<div\s*class\=\"head\">\s*<a\s*href\=\"\#\"\s*class\=\"heading\s*open\">\s*((?!Size|Price|Rating|Gender)[^>]*?)\s*<\/a>\s*([\w\W]*?)\s*<\/div>\s*<\/fieldset>/igs)
+		{
+			my $filter=&clean($1);						
+			my $filter_block=$2;					
+			$filter=~s/\&\#x28\;/\(/igs;
+			$filter=~s/\&\#x29\;/\)/igs;					
+			while($filter_block=~m/<input\s*type\=\"checkbox\"\s*data\-components\=\'\[\"checkable\"\]\'\s*data\-auto\-post\=\"change\"\s*id\=\"generic\-\d+\"\s*name\=\"([^>]*?)\"\s*class\=\"checked\"\s*\/>\s*<label\s*class\=\"checkbox\-label\"\s*for\=\"generic\-\d+\">\s*<span\s*class\=\"filterOption\">\s*([^>]*?)\s*<\/span>/igs)
+			{
+				my $filter_pass=$1;
+				my $filter_value=$2;
+				my $filter_url=$url_append.'&'.$filter_pass.'=on'."&display=product&cachedFilters=".$filter_pass."+0+40+0+40+product+24";					
+				my $filter_content = &lwp_get($filter_url);
+				NextPage1:
+				while($filter_content=~m/itemprop\=\"url\"\s*href\=\"([^>]*?)\">\s*[^>]*?\s*<\/a>\s*<\/h3>/igs)
+				{
+					my $product_url=decode_entities($1);
+					$product_url=$1 if($product_url=~m/([^>]*?)\?/is);
+					
+					&db_insert($product_url,$menu_1,$menu_2,$menu_3,$menu_4,$menu_5,$menu_6,$filter,$filter_value);
+				}
+				if($filter_content=~m/<li>\s*<a\s*href\s*=\"\#link\"\s*class\=\"next\"\s*name\=\"page\"\s*data\-update\-hidden\=\"pageChoice\"\s*data\-auto\-post\=\"click\"\s*data\-value\=\"(\d+)\"\s*>\s*Next\s*<\/a>\s*<\/li>/is)
+				{
+					my $page_no=$1;
+					my $next_page_url=$filter_url.'&display=product&resultsPerPage=24&pageChoice='.$page_no;
+					$filter_content=lwp_get($next_page_url);
+					goto NextPage1;
+				}
+			}
+			while($filter_block=~m/<input\s*type\=\"checkbox\"\s*data\-components\=\'\[\"checkable\"\]\'\s*data\-auto\-post\=\"change\"\s*id\=\"[^>]*?\"\s*name\=\"([^>]*?)\"\s*\/>\s*<label\s*class\=\"color\-facet checkbox\-label\"\s*for\=\"[^>]*?\">\s*<span\s*class\=\"filterOption\s*hidden\">\s*\&nbsp\;\s*([^>]*?)\s*<\/span>/igs)
+			{
+				my $filter_pass=$1;
+				my $filter_value=$2;
+				my $filter_url=$url_append.'&'.$filter_pass.'=on'."&display=product&cachedFilters=".$filter_pass."+0+40+0+40+product+24";
+				my $filter_content=lwp_get($filter_url);
+				NextPage2:
+				while($filter_content=~m/itemprop\=\"url\"\s*href\=\"([^>]*?)\">\s*[^>]*?\s*<\/a>\s*<\/h3>/igs)
+				{
+					my $product_url=decode_entities($1);
+					$product_url=$1 if($product_url=~m/([^>]*?)\?/is);
+					
+					&db_insert($product_url,$menu_1,$menu_2,$menu_3,$menu_4,$menu_5,$menu_6,$filter,$filter_value);
+				}
+				if($filter_content=~m/<li>\s*<a\s*href\s*=\"\#link\"\s*class\=\"next\"\s*name\=\"page\"\s*data\-update\-hidden\=\"pageChoice\"\s*data\-auto\-post\=\"click\"\s*data\-value\=\"(\d+)\"\s*>\s*Next\s*<\/a>\s*<\/li>/is)
+				{
+					my $page_no=$1;
+					my $next_page_url=$filter_url.'&display=product&resultsPerPage=24&pageChoice='.$page_no;
+					$filter_content=lwp_get($next_page_url);
+					goto NextPage2;
+				}
+			}
+			while($filter_block=~m/<input\s*type\=\"radio\"\s*data\-components\=\'\[\"checkable\"\]\'\s*value\=\"([^>]*?)\"\s*data\-auto\-post\=\"change\"\s*id\=\"radioId\-\d+\"\s*name\=\"([^>]*?)\"\s*\/>\s*<label\s*class\=\"radio\-label\"\s*for\=\"radioId\-\d+\">\s*<span\s*class\=\"filterOption\">\s*([^>]*?)\s*<\/span>/igs)
+			{
+				my $filter_pass=$2.'='.$1;
+				my $filter_value=$3;
+				my $filter_url=$url_append.'&'.$filter_pass.'=on'."&display=product&cachedFilters=".$filter_pass."+0+40+0+40+product+24";
+				my $filter_content=lwp_get($filter_url);
+				NextPage3:
+				while($filter_content=~m/itemprop\=\"url\"\s*href\=\"([^>]*?)\">\s*[^>]*?\s*<\/a>\s*<\/h3>/igs)
+				{
+					my $product_url=decode_entities($1);
+					$product_url=$1 if($product_url=~m/([^>]*?)\?/is);
+					
+					&db_insert($product_url,$menu_1,$menu_2,$menu_3,$menu_4,$menu_5,$menu_6,$filter,$filter_value);
+				}
+				if($filter_content=~m/<li>\s*<a\s*href\s*=\"\#link\"\s*class\=\"next\"\s*name\=\"page\"\s*data\-update\-hidden\=\"pageChoice\"\s*data\-auto\-post\=\"click\"\s*data\-value\=\"(\d+)\"\s*>\s*Next\s*<\/a>\s*<\/li>/is)
+				{
+					my $page_no=$1;
+					my $next_page_url=$filter_url.'&display=product&resultsPerPage=24&pageChoice='.$page_no;
+					$filter_content=lwp_get($next_page_url);
+					goto NextPage3;
+				}
+			}
+		}
+	}
+	else
+	{
+		NextPageAV:
+		while($menu_3_content =~ m/itemprop\=\"url\"\s*href\=\"([^>]*?)\">\s*[^>]*?\s*<\/a>\s*<\/h3>/igs)
+		{
+			my $product_url=decode_entities($1);
+			$product_url=$1 if($product_url=~m/([^>]*?)\?/is);
+			&db_insert($product_url,$menu_1,$menu_2,$menu_3,$menu_4,$menu_5,$menu_6,'','');
+		}
+		if($menu_3_content =~ m/<li>\s*<a\s*href\s*=\"\#link\"\s*class\=\"next\"\s*name\=\"page\"\s*data\-update\-hidden\=\"pageChoice\"\s*data\-auto\-post\=\"click\"\s*data\-value\=\"(\d+)\"\s*>\s*Next\s*<\/a>\s*<\/li>/is)
+		{
+			my $nexturl = $1;
+			$nexturl = $url_append.'&pageChoice='.$nexturl;
+			$menu_3_content=lwp_get($nexturl);
+			goto NextPageAV;
+		}
 	}
 }
-$dbh->commit();
-#################### For Dashboard #######################################
-DBIL::Save_mc_instance_Data($retailer_name1,$retailer_id,$pid,$ip,'STOP',$robotname);
-#################### For Dashboard #######################################
 
-#system(`/opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Ms-UK--Detail.pl  &`);
-
-sub lwp_get()
+sub db_insert()
 {
-	my $url=$_[0];
-	my $code_count=0;
-    REPEAT: 
-    my $req = HTTP::Request->new(GET=>$url); 
-    $req->header("Accept"=>"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"); 
-    $req->header("Content-Type"=>"application/x-www-form-urlencoded"); 
-    my $res = $ua->request($req); 
-    $cookie->extract_cookies($res); 
-    $cookie->save; 
-    $cookie->add_cookie_header($req); 
-    my $code = $res->code(); 
-    print $code,"\n"; 
-	open LL,">>".$retailer_file;
-    print LL "$url=>$code\n";
-    close LL;
-    if($code =~ m/50/is)
-    {
-		if($code_count<3)
-		{
-			sleep 1;
-			$code_count++;
-			goto REPEAT;			
-		}		
-    }	
-	return($res->content());
+	my ($product_url, $menu1, $menu2, $menu3, $menu4, $menu5, $menu6, $filter, $filtervalue) = @_;
+	
+	my $product_object_key;
+	
+	if($validate{$product_url} eq '')
+	{ # CHECKING WHETHER PRODUCT URL ALREADY AVAILABLE IN THE HASH TABLE
+		$product_object_key=&DBIL::SaveProduct($product_url,$dbh,$robotname,$retailer_id,$Retailer_Random_String,$excuetionid); # GENERATING UNIQUE PRODUCT ID
+		$validate{$product_url}=$product_object_key; # STORING PRODUCT_ID INTO HASH TABLE
+	}
+	$product_object_key=$validate{$product_url}; # USING EXISTING PRODUCT_ID IF THE HASH TABLE CONTAINS THIS URL
+	
+	print "product_url: $product_url\n";
+		
+	unless($menu1=~m/^\s*$/is)
+	{
+		DBIL::SaveTag('Menu_1',$menu1,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+	}
+	unless($menu2=~m/^\s*$/is)
+	{
+		DBIL::SaveTag('Menu_2',$menu2,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+	}
+	unless($menu3=~m/^\s*$/is)
+	{
+		DBIL::SaveTag('Menu_3',$menu3,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+	}
+	unless($menu4=~m/^\s*$/is)
+	{
+		DBIL::SaveTag('Menu_4',$menu4,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+	}
+	unless($menu5=~m/^\s*$/is)
+	{
+		DBIL::SaveTag('Menu_5',$menu5,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+	}
+	unless($menu6=~m/^\s*$/is)
+	{
+		DBIL::SaveTag('Menu_6',$menu6,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+	}
+	unless($filter=~m/^\s*$/is)
+	{
+		DBIL::SaveTag($filter,$filtervalue,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+	}
+	$dbh->commit();	
+}
+
+################### For Dashboard #######################################
+DBIL::Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'STOP',$robotname);
+################### For Dashboard #######################################
+
+sub lwp_get(){ # FETCH SOURCE PAGE CONTENT FOR THE GIVEN URL
+	my $url=shift;
+	my $rerun_count=0;
+	$url=~s/^\s+|\s+$//g;
+	Repeat:
+	my $request=HTTP::Request->new(GET=>$url);
+	$request->header("Accept"=>"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"); 
+    $request->header("Content-Type"=>"application/x-www-form-urlencoded");
+	my $response=$ua->request($request);
+	$cookie->extract_cookies($response);
+	$cookie->save;
+	$cookie->add_cookie_header($request);
+	my $code=$response->code;
+	
+	######## WRITING LOG INTO /var/tmp/Retailer/$retailer_file #######
+	
+	open JJ,">>$retailer_file";
+	print JJ "$url->$code\n";
+	close JJ;
+	
+	##################################################################
+	
+	my $content;
+	if($code=~m/20/is){
+		$content=$response->content;
+		return $content;
+	}
+	elsif($code=~m/30/is){
+		my $loc=$response->header('location');                
+        $loc=decode_entities($loc);    
+        my $loc_url=url($loc,$url)->abs;        
+        $url=$loc_url;
+        goto Repeat;
+	}
+	elsif($code=~m/40/is){
+		if($rerun_count <= 3){
+			$rerun_count++;			
+			goto Repeat;
+		}
+		return 1;
+	}
+	else{
+		if($rerun_count <= 3){
+			$rerun_count++;			
+			goto Repeat;
+		}
+		return 1;
+	}
+}
+
+sub clean()
+{
+	my $var=shift;
+	$var=~s/<[^>]*?>/ /igs;
+	$var=~s/\&nbsp\;|amp\;/ /igs;
+	$var=decode_entities($var);
+	$var=~s/\s+/ /igs;
+	return ($var);
 }
