@@ -127,6 +127,10 @@ sub Jigsaw_UK_DetailProcess()
 				elsif($color_page=~m/<p\s*class\=\"product_price\s*\">\s*<span\s*class\=\"fromPrice\">\&pound\;([^>]*?)\s*<\/span>\s*(\-)\s*<span\s*class\=\"toPrice\">\&pound\;([^>]*?)\s*<\/span>/is)
 				{
 					$price_text = "£$1 $2 £$3";
+					my $max=$1;#25
+					my $min=$3;#19
+					$current_price=&DBIL::Trim($min) if($max>$min);
+					$current_price=&DBIL::Trim($max) if($max<$min);
 				}
 				elsif($color_page=~m/<p\s*class\=\"product_price[^>]*?\">[\w\W]*?<span\s*class\=\"nowPrice\">\s*\&pound\;\s*([^>]*?)<\/span><\/p>/is){
 					$current_price=&DBIL::Trim($1);
@@ -137,38 +141,38 @@ sub Jigsaw_UK_DetailProcess()
 				if($color_page=~m/<div\s*id\=\"select_size\"([\w\W]*?)<\/div>/is){
 					my $size_block=$1;
 
-					if($price_text =~ m/\-/is)
-					{
-						if($color_page=~m/<div\s*id\=\"select_size\"([\w\W]*?)<\/div>/is)
-						{
-							my $size_block=$1;
-							my $forwardParamValue1 = $1 if($color_page =~ m/type\=\"hidden\"\s*name\=\"forwardParamValue1\"\s*value\=\"([^>]*?)\"/is);
-							while($size_block=~m/<li\s*class\=\"([^>]*?)\"[^>]*?>\s*<label\s*for\=\"sku_([^>]*?)\">\s*([^>]*?)\s*<\/label>/igs){
-								my $stock=&DBIL::Trim($1);
-								my $sku=&DBIL::Trim($2); # SIZE
-								my $size=&DBIL::Trim($3); # SIZE
-								my $out_of_stock='y'; # OUT-STOCK			
-								$out_of_stock='n' if($stock=~m/in_stock/is); # IN-STOCK
-								my $price;
-								my $sku_url = "http://www.jigsaw-online.com/pws/UpdateBasket.ice?forwardParamName1=ProductID&forwardParamValue1=$forwardParamValue1&forwardParamName2=colour&forwardParamValue2=&layout=basketresponse.layout&quantity=1&Update=AddQuantity&ProductID=$sku";
-								my $eachskucontent = &get_source_page($sku_url);
-								$price = &DBIL::Trim($1) if($eachskucontent =~ m/class\=\"unit_price\">\s*([^>]*?)\s*<\/td>/is);
-								$price=~s/&pound;//igs;
-								$price='null' if($price eq '' or $price eq ' ');
-								my $emptybasket = "http://www.jigsaw-online.com/pws/UpdateBasket.ice?newquant_$sku=0&Update=AmendQuantity&ProductID=$sku";
-								$eachskucontent = &get_source_page($emptybasket);
-								print "$size --> $price_text --> $out_of_stock -> $price\n";
-								undef ($eachskucontent);
-								# DEPLOYING SKU DETAILS INTO SKU TABLE
-								my ($sku_object,$flag,$query)=&DBIL::SaveSku($product_object_key,$product_url,$product_name,$price,$price_text,$size,$raw_color,$out_of_stock,$dbh,$Retailer_Random_String,$robotname,$excuetionid);
-								$skuflag=1 if($flag);
-								$sku_objectkey{$sku_object}=$raw_color;
-								push(@query_string,$query);
-							}
-						}
-					}
-					else
-					{
+					# if($price_text =~ m/\-/is)
+					# {
+						# if($color_page=~m/<div\s*id\=\"select_size\"([\w\W]*?)<\/div>/is)
+						# {
+							# my $size_block=$1;
+							# my $forwardParamValue1 = $1 if($color_page =~ m/type\=\"hidden\"\s*name\=\"forwardParamValue1\"\s*value\=\"([^>]*?)\"/is);
+							# while($size_block=~m/<li\s*class\=\"([^>]*?)\"[^>]*?>\s*<label\s*for\=\"sku_([^>]*?)\">\s*([^>]*?)\s*<\/label>/igs){
+								# my $stock=&DBIL::Trim($1);
+								# my $sku=&DBIL::Trim($2); # SIZE
+								# my $size=&DBIL::Trim($3); # SIZE
+								# my $out_of_stock='y'; # OUT-STOCK			
+								# $out_of_stock='n' if($stock=~m/in_stock/is); # IN-STOCK
+								# my $price;
+								# my $sku_url = "http://www.jigsaw-online.com/pws/UpdateBasket.ice?forwardParamName1=ProductID&forwardParamValue1=$forwardParamValue1&forwardParamName2=colour&forwardParamValue2=&layout=basketresponse.layout&quantity=1&Update=AddQuantity&ProductID=$sku";
+								# my $eachskucontent = &get_source_page($sku_url);
+								# $price = &DBIL::Trim($1) if($eachskucontent =~ m/class\=\"unit_price\">\s*([^>]*?)\s*<\/td>/is);
+								# $price=~s/&pound;//igs;
+								# $price='null' if($price eq '' or $price eq ' ');
+								# my $emptybasket = "http://www.jigsaw-online.com/pws/UpdateBasket.ice?newquant_$sku=0&Update=AmendQuantity&ProductID=$sku";
+								# $eachskucontent = &get_source_page($emptybasket);
+								# print "$size --> $price_text --> $out_of_stock -> $price\n";
+								# undef ($eachskucontent);
+								# # DEPLOYING SKU DETAILS INTO SKU TABLE
+								# my ($sku_object,$flag,$query)=&DBIL::SaveSku($product_object_key,$product_url,$product_name,$price,$price_text,$size,$raw_color,$out_of_stock,$dbh,$Retailer_Random_String,$robotname,$excuetionid);
+								# $skuflag=1 if($flag);
+								# $sku_objectkey{$sku_object}=$raw_color;
+								# push(@query_string,$query);
+							# }
+						# }
+					# }
+					# else
+					# {
 						while($size_block=~m/<li\s*class\=\"([^>]*?)\"[^>]*?>\s*<label\s*for\=\"sku_[^>]*?\">\s*([^>]*?)\s*<\/label>/igs)
 						{
 							my $stock=&DBIL::Trim($1);
@@ -182,7 +186,7 @@ sub Jigsaw_UK_DetailProcess()
 							$sku_objectkey{$sku_object}=$raw_color;
 							push(@query_string,$query);
 						}
-					}
+					# }
 				}
 				
 				# PRODUCT IMAGE EXTRACTION

@@ -93,41 +93,58 @@ while($content =~ m/class\=\"mega\-trigger\"\s*>\s*<a[^>]*?href\=\"([^>]*?)\">\s
 	while($menu_1_content =~ m/<li\s*class\=\"[^>]*?\s*panel\"\s*role\=\"tabpanel\">\s*([\w\W]*?)\s*<\/div>\s*<\/li>/igs)
 	{
 		my $menu1block = $1;
-		while($menu1block =~ m/<h2>\s*([\w\W]*?)\s*<\/h2>([\w\W]*?)<\/div>\s*<\/div>/igs)
+		while($menu1block =~ m/<h2>\s*(Bags[\w\W]*?)\s*<\/h2>([\w\W]*?)<\/ul>\s*<\/div>/igs)
 		{
 			my $menu3 = &clean($1);    ##### Categories, Explore our brand
 			my $menu1block2 = $2;
+			# next unless($menu3 =~ m/BOUTIQUES/is);
 			while($menu1block2 =~ m/href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<\/a>/igs)
 			{
 				my $listurl2 = $1;
 				my $menu4 = &clean($2);  ## New IN, Blazers, Cashmers....
+				print "$menu1->$menu2[$i]->$menu3->$menu4\n";
+				# next unless($menu4 =~ m/petite/is);
 				my $menu2content = &lwp_get($listurl2);
-				
-				if($menu2content =~ m/<div\s*class\=\"inner\-box\">([\w\W]*?<\/ul>\s*)<\/div>\s*<\/div>\s*<\/div>\s*<\/div>\s*<div\s*class\=\"control\-bar\-wrapper\">/is)
+				# if($menu2content =~ m/<div\s*class\=\"inner\-box\">([\w\W]*?<\/ul>\s*)<\/div>\s*<\/div>\s*<\/div>\s*<\/div>\s*<div\s*class\=\"control\-bar\-wrapper\">/is)
+				if($menu2content !~ m/<li\s*class\=\"active\">\s*<a>\s*$menu4\s*<\/a>/is)
 				{
-					my $menu2subcat = $1;
-					while($menu2subcat =~ m/href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<\/a>/igs)
+					if($menu2content =~ m/<div\s*class\=\"inner\-box\">([\w\W]*?)<div\s*class\=\"control\-bar\-wrapper\">/is)
 					{
-						my $listurl3 = $1;
-						my $menu5 = &clean($2);  ## Shoes & Sandals, Clothing, Bags & Accessories.
-						my $menu3content = &lwp_get($listurl3);
-						
-						if($menu3content =~ m/<div\s*class\=\"inner\-box\">([\w\W]*?)<\/div>\s*<\/div>/is)
+						my $menu2subcat = $1;
+						while($menu2subcat =~ m/href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<\/a>/igs)
 						{
-							my $menu3subcat = $1;
-							while($menu3subcat =~ m/href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<\/a>/igs)
+							my $listurl3 = $1;
+							my $menu5 = &clean($2);  ## Shoes & Sandals, Clothing, Bags & Accessories.
+							my $tmenu5 = quotemeta($menu5);
+							my $menu3content = &lwp_get($listurl3);
+							if($menu3content !~ m/<li\s*class\=\"active\">\s*<a>\s*$tmenu5\s*<\/a>/is)
 							{
-								my $listurl4 = $1;
-								my $menu6 = &clean($2);  ## Shoes.
-								my $menu4content = &lwp_get($listurl4);
-								
-								&URL_Collection($menu4content, $menu1, $menu2[$i], $menu3, $menu4, $menu5, $menu6);
+								if($menu3content =~ m/<div\s*class\=\"inner\-box\">([\w\W]*?)<\/div>\s*<\/div>/is)
+								{
+									my $menu3subcat = $1;
+									while($menu3subcat =~ m/href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<\/a>/igs)
+									{
+										my $listurl4 = $1;
+										my $menu6 = &clean($2);  ## Shoes.
+										my $menu4content = &lwp_get($listurl4);
+										
+										&URL_Collection($menu4content, $menu1, $menu2[$i], $menu3, $menu4, $menu5, $menu6);
+									}
+								}
+								else
+								{
+									&URL_Collection($menu3content, $menu1, $menu2[$i], $menu3, $menu4, $menu5, '');
+								}
+							}
+							else
+							{
+								&URL_Collection($menu3content, $menu1, $menu2[$i], $menu3, $menu4, $menu5, '');
 							}
 						}
-						else
-						{
-							&URL_Collection($menu3content, $menu1, $menu2[$i], $menu3, $menu4, $menu5, '');
-						}
+					}
+					else
+					{
+						&URL_Collection($menu2content, $menu1, $menu2[$i], $menu3, $menu4, '', '');
 					}
 				}
 				else
@@ -246,7 +263,7 @@ sub URL_Collection()
 sub db_insert()
 {
 	my ($product_url, $menu1, $menu2, $menu3, $menu4, $menu5, $menu6, $filter, $filtervalue) = @_;
-	
+	print "$menu1, $menu2, $menu3, $menu4, $menu5, $menu6, $filter, $filtervalue\n";
 	my $product_object_key;
 	
 	if($validate{$product_url} eq '')
