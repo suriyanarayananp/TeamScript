@@ -7,7 +7,7 @@ use Net::Domain qw(hostname);
 require "/opt/home/merit/Merit_Robots/anorak-worker/AnorakDB.pm";
 require "/opt/home/merit/Merit_Robots/anorak-worker/AnorakUtility.pm";
 require "/opt/home/merit/Merit_Robots/anorak-worker/AnorakImages.pm";
-require "/opt/home/merit/Merit_Robots/Peacocks_UK.pm";
+require "/opt/home/merit/Merit_Robots/Dune_UK.pm";
 my $ini_file = '/opt/home/merit/Merit_Robots/anorak-worker/anorak-worker.ini';
 ###########################################
 
@@ -21,7 +21,7 @@ my $robotname_list=$robotname;
 $robotname_list =~ s/\-\-Detail/--List/igs;
 $retailer_name =~ s/\-\-Detail\s*$//igs;
 $retailer_name = lc($retailer_name);
-my $Retailer_Random_String='Pea';
+my $Retailer_Random_String='Duk';
 my $pid = $$;
 my $ip = `/sbin/ifconfig eth0 | grep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`;
 $ip = $1 if($ip =~ m/inet\s*addr\:([^>]*?)\s+/is);
@@ -63,14 +63,14 @@ $images->connect($ini->{images}->{path});
 # Conect to Utility package
 my $utility = AnorakUtility->new($logger,$ua);
 
-my $hashref = $database->GetAllUrls("1cfa7bb579119648ef193560b237d388233517f");
+my $hashref = $database->GetAllUrls("78e6c886a36f9ce70e89a485b579b7ec");
 my %hashUrl = %$hashref;
 foreach (keys %hashUrl)
 {
 	my $product_object_key = $_;
 	my $product_url = $hashUrl{$_};
 	print "$product_object_key -> $product_url\n";
-	&Peacocks_UK::Peacocks_UK_DetailProcess($product_object_key,$product_url,'Peacocks-UK--worker',"1cfa7bb579119648ef193560b237d388233517f",$logger,'http://frawspcpx.cloud.trendinglines.co.uk:3128',$ua,$database,$images,$utility);
+	&Dune_UK::Dune_UK_DetailProcess($product_object_key,$product_url,'Dune-UK--worker',"78e6c886a36f9ce70e89a485b579b7ec",$logger,'http://frawspcpx.cloud.trendinglines.co.uk:3128',$ua,$database,$images,$utility);
 }
 #DBIL::RetailerUpdate($retailer_id,$excuetionid,$dbh,$robotname,'end');
 $database->disconnect();

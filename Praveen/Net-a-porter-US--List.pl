@@ -1,229 +1,323 @@
 #!/opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl
-########## MODULE INITIALIZATION ###########
 
+# Required modules are initialized.
 use strict;
 use LWP::UserAgent;
-use HTML::Entities;
-use HTTP::Cookies;
-use DBI;
-require "/opt/home/merit/Merit_Robots/DBILv2/DBIL.pm"; # USER DEFINED MODULE DBIL.PM
+use Log::Syslog::Fast ':all';
+use Net::Domain qw(hostname);
+use Config::Tiny;
+require "/opt/home/merit/Merit_Robots/anorak-worker/AnorakDB.pm";
+require "/opt/home/merit/Merit_Robots/anorak-worker/AnorakUtility.pm";
 
-###########################################
+# Location of the config file with all settings.
+my $ini_file = '/opt/home/merit/Merit_Robots/anorak-worker/anorak-worker.ini';
 
-######### VARIABLE INITIALIZATION ##########
-
-my $robotname=$0;
-$robotname=~s/\.pl//igs;
-$robotname =$1 if($robotname=~m/[^>]*?\/*([^\/]+?)\s*$/is);
+# Robotname is constructed from file name.
+my $robotname = $0;
+$robotname =~ s/\.pl//igs;
+$robotname =$1 if($robotname =~ m/[^>]*?\/*([^\/]+?)\s*$/is);
 my $retailer_name=$robotname;
-$retailer_name=~s/\-\-List\s*$//igs;
-$retailer_name=lc($retailer_name);
+$retailer_name =~ s/\-\-List\s*$//igs;
+$retailer_name = lc($retailer_name);
 my $Retailer_Random_String='Nus';
-my $pid=$$;
-my $ip=`/sbin/ifconfig eth0 | grep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`;
-$ip=$1 if($ip=~m/inet\s*addr\:([^>]*?)\s+/is);
-my $excuetionid=$ip.'_'.$pid;
 
-#############################################
+# Execution ID is formed by combining Process ID and IP address.
+my $pid = $$;
+my $ip = `/sbin/ifconfig eth0 | grep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`;
+$ip = $1 if($ip =~ m/inet\s*addr\:([^>]*?)\s+/is);
+my $executionid = $ip.'_'.$pid;
+my %totalHash;
 
-######### PROXY INITIALIZATION ##############
-
-my $country=$1 if($robotname=~m/\-([A-Z]{2})\-\-/is);
-&DBIL::ProxyConfig($country);
-
-#############################################
-
-######### USER AGENT #######################
-
-my $ua=LWP::UserAgent->new(show_progress=>1);
+# Creating user agent (Mozilla Firefox).
+my $ua = LWP::UserAgent->new(show_progress=>1);
 $ua->agent("Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 (.NET CLR 3.5.30729)");
 $ua->timeout(30); 
 $ua->cookie_jar({});
-$ua->env_proxy;
 
-############################################
+# Read the settings from the configuration file.
+my $ini = Config::Tiny->new;
+$ini = Config::Tiny->read($ini_file);
+if (!defined $ini)
+{
+	# Die if reading the settings failed.
+	die "FATAL: ", Config::Tiny->errstr;
+}
 
-######### COOKIE FILE CREATION ############
+# Setup logging to syslog.
+my $logger = Log::Syslog::Fast->new(LOG_UDP, $ini->{logs}->{server}, $ini->{logs}->{port}, LOG_LOCAL3, LOG_INFO, $ip,'aw-'. $pid . '@' . $ip );
 
-my ($cookie_file,$retailer_file)=&DBIL::LogPath($robotname);
-my $cookie=HTTP::Cookies->new(file=>$cookie_file,autosave=>1); 
-$ua->cookie_jar($cookie);
+# Connect to AnorakDB package.
+my $dbobject = AnorakDB->new($logger,$executionid);
+$dbobject->connect($ini->{mysql}->{host}, $ini->{mysql}->{port}, $ini->{mysql}->{name}, $ini->{mysql}->{user}, $ini->{mysql}->{pass});
 
-############################################
+# Connect to Utility package.
+my $utilityobject = AnorakUtility->new($logger,$ua);
 
-######### ESTABLISHING DB CONNECTION #######
+# Get Retailer_id & Proxy details.
+my ($retailer_id,$ProxySetting) = $dbobject->GetRetailerProxy($retailer_name);
+$dbobject->RetailerUpdate($retailer_id,$robotname,'start');
 
-my $dbh=&DBIL::DbConnection();
+# Set the proxy environment.
+$utilityobject->SetEnv($ProxySetting);
 
-############################################
- 
-my $select_query="select ObjectKey from Retailer where name=\'$retailer_name\'";
-my $retailer_id=&DBIL::Objectkey_Checking($select_query, $dbh, $robotname);
+# Saving start time in dashboard.
+$dbobject->Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'START',$robotname);
 
-# ROBOT START PROCESS TIME STORED INTO RETAILER TABLE FOR RUNTIME MANIPULATION
-&DBIL::RetailerUpdate($retailer_id,$excuetionid,$dbh,$robotname,'start');
+$logger->send("$robotname :: Instance Started :: $pid\n");
 
-#################### For Dashboard #######################################
-DBIL::Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'START',$robotname);
-#################### For Dashboard #######################################
+# Retailer home page content.
+my $home_url = 'http://www.net-a-porter.com'; # RETAILER HOME URL : NET-A-PORTER, US
+my $source_page = $utilityobject->Lwp_Get($home_url);
 
-###### <-- LIST ROBOT - BEGIN --> ########
-
-my $home_url='http://www.net-a-porter.com'; # RETAILER HOME URL : NET-A-PORTER, US
-my $source_page=&get_source_page($home_url);
-
-my %validate;
-# EXTRACTS TOP MENUS : WHAT'S NEW, CLOTHING, BAGS, SHOES, ACCESSORIES, LINGERIE AND BEAUTY (EXCLUDED THE EDIT AND DESIGNER - SINCE WE SCRAPE DESIGNER FROM THE PRODUCT PAGE)
-while($source_page=~m/<a\s*class\=\"top\-nav\-link[^>]*?\"\s*href\=\"[^>]*?\">\s*((?!\s*The\s*Edit|\s*Sale|\s*Designer)[^>]*?)\s*<\/a>\s*([\w\W]*?)\s*<\/div>\s*<\/div>\s*<\/div>\s*<\/li>/igs){
-	my $top_menu=&DBIL::Trim($1); # CLOTHING
-	my $top_menu_block=$2;
+# Extracts top menus : what's new, clothing, bags, shoes, accessories, lingerie and beauty (excluded the edit and designer - since we scrape designer from the product page).
+while($source_page =~ m/<a\s*class\=\"top\-nav\-link[^>]*?\"\s*href\=\"[^>]*?\">\s*((?!\s*The\s*Edit|\s*Designer|\s*sale)[^>]*?)\s*<\/a>\s*([\w\W]*?)\s*<\/div>\s*<\/div>\s*<\/div>\s*<\/li>/igs)
+{
+	my $top_menu = $utilityobject->Trim($1); # Clothing.
+	my $top_menu_block = $2;
 	
-	while($top_menu_block=~m/<div\s*class\=\"header\s*border\-bottom[^>]*?\">\s*([^>]*?)\s*<\/div>\s*([\w\W]*?\s*<\/div>)\s*<\/div>/igs){ # EXTRACTS MENU 2 AND MENU 2 BLOCK FROM TOP MENU BLOCK
-		my $menu_2=$1; # SHOP BY
-		my $menu_2_block=$2;
-		next if($menu_2=~m/Designers|Brand/is); # MENU 2 : DESIGNER/BRAND SKIPPED
+	# Extracts menu 2 and menu 2 block from top menu block.
+	while($top_menu_block =~ m/<div\s*class\=\"header\s*border\-bottom[^>]*?\">\s*([^>]*?)\s*<\/div>\s*([\w\W]*?\s*<\/div>)\s*<\/div>/igs)
+	{
+		my $menu_2 = $1; # Shop by.
+		my $menu_2_block = $2;
+		next if($menu_2 =~ m/Designers|Brand/is); # Menu 2 : designer/brand skipped.
 		
-		while($menu_2_block=~m/<a[^>]*?href\=\"([^>]*?)\"\s*>\s*((?!The\s*Trend\s*Report|\s*All\s*)[^>]*?)\s*<\/a>/igs){ # EXTRACTS MENU 3 AND IT'S CORRESPONDING URL FROM MENU 2 BLOCK (EXCLUDING "THE TREND REPORT" AND "ALL" FROM MENU 2 BLOCK)
-			my $menu_3_url=$home_url.$1;
-			my $menu_3=&DBIL::Trim($2); # BLAZERS
-			my $menu_3_page=&get_source_page($menu_3_url);
-			next if($menu_3_url=~m/AZdesigner/is); # MENU 3 URL : AZ DESIGNER SKIPPED
+		# Extracts menu 3 and it's corresponding url from menu 2 block (excluding "the trend report" and "all" from menu 2 block).
+		while($menu_2_block =~ m/<a[^>]*?href\=\"([^>]*?)\"\s*>\s*((?!The\s*Trend\s*Report|\s*All\s*)[^>]*?)\s*<\/a>/igs)
+		{
+			my $menu_3_url = $1;
+			my $menu_3 = $utilityobject->Trim($2); # Blazers.
+			$menu_3_url = $home_url.$menu_3_url unless($menu_3_url=~m/^http/is);
+			my $menu_3_page = $utilityobject->Lwp_Get($menu_3_url);
+			next if($menu_3_url =~ m/AZdesigner/is); # Menu 3 url : az designer skipped.
 			
-			if($menu_3_url=~m/level\d+Filter\=/is){ # NAVIGATION: CLOTHING -> SHOP BY -> BLAZERS
-				while($menu_3_page=~m/<a\s*class\=\"filter_name\"\s*href\=\"\?([^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs){
-					my $filter_url=$menu_3_url.'&'.$1.'&npp=view_all';
-					my $filter_name=&DBIL::Trim($2); # COLOUR
-					my $filter_value=&DBIL::Trim($3); # WHITE
-					#$filter_url=~s/\&npp\=60/\&npp\=view_all/igs;
-					my $filter_page=&get_source_page($filter_url);
-					&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,'','',$filter_name,$filter_value); # TRANSPORTS PRODUCT_URL, TOP_MENU, MENU_2, MENU_3, FILTER AND FILTER VALUE TO PRODUCT_INSERT MODULE FOR INSERTING TAGS INTO DB (NAVIGATION: CLOTHING -> SHOP BY -> BLAZERS -> COLOUR -> WHITE)					
+			# Navigation: clothing -> shop by -> blazers.
+			if($menu_3_page =~ m/<li\s*class\=\"\s*selected\s*\">/is)
+			{
+				while($menu_3_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"\?([^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
+				{
+					my $append_url = $1.'&npp=view_all';
+					my $filter_name = $utilityobject->Trim($2); # Colour.
+					my $filter_value = $utilityobject->Trim($3); # White.
+					
+					if($menu_3_url =~ m/level\d+filter\=/is)
+					{
+						$append_url = $1.$2 if($append_url =~ m/^([^>]*?)\&level\d+Filter\=[^>]*?(\&npp\=view_all)$/is);
+					}
+					my $filter_url = $menu_3_url.'&'.$append_url;
+					
+					my $filter_page = $utilityobject->Lwp_Get($filter_url);
+					&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,'','',$filter_name,$filter_value); # Transports product_url, top_menu, menu_2, menu_3, filter and filter value to product_insert module for inserting tags into db (navigation: clothing -> shop by -> blazers -> colour -> white).
 				}
 			}
-			elsif($menu_3_page=~m/<li\s*class\=\"open\s*selected\">/is){ # NAVIGATION: CLOTHING -> SHOP BY -> WEDDING
-				while($menu_3_page=~m/<span>\s*<a[^>]*?href\=\"[^>]*?\">\s*([^>]*?)\s*<\/a>\s*<\/span>\s*<ul>\s*([\w\W]*?)\s*<\/ul>/igs){ # NAVIGATION: CLOTHING -> SHOP BY -> WEDDING -> THE BRIDE
-					my $category=$1; # THE BRIDE
-					my $category_block=$2;
+			elsif($menu_3_page =~ m/<li\s*class\=\"open\s*selected\">/is) # Navigation: clothing -> shop by -> wedding.
+			{
+				# Navigation: clothing -> shop by -> wedding -> the bride.
+				while($menu_3_page =~ m/<span>\s*<a[^>]*?href\=\"[^>]*?\">\s*([^>]*?)\s*<\/a>\s*<\/span>\s*<ul>\s*([\w\W]*?)\s*<\/ul>/igs)
+				{
+					my $category = $1; # The bride.
+					my $category_block = $2;
 					
-					while($category_block=~m/<a[^>]*?href\=\"([^>]*?)\">\s*([^>]*?)\s*<\/a>/igs){ # NAVIGATION: CLOTHING -> SHOP BY -> WEDDING -> THE BRIDE -> DRESSES & SEPARATES
-						my $sub_category_url=$1;
-						my $sub_category=$2; # DRESSES & SEPARATES
-						my $sub_category_page=&get_source_page($sub_category_url);
+					# Navigation: clothing -> shop by -> wedding -> the bride -> dresses & separates.
+					while($category_block =~ m/<a[^>]*?href\=\"([^>]*?)\">\s*([^>]*?)\s*<\/a>/igs)
+					{
+						my $sub_category_url = $1;
+						my $sub_category = $2; # Dresses & separates.
+						my $sub_category_page = $utilityobject->Lwp_Get($sub_category_url);
 						
-						while($sub_category_page=~m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs){
-							my $filter_url=$sub_category_url.$1;
-							my $filter_name=&DBIL::Trim($2); # COLOUR
-							my $filter_value=&DBIL::Trim($3); # WHITE
-							$filter_url=$1.$2 if($filter_url=~m/([^>]*?)\?SelItem\=\d+(?:\;\d+)?(\&colourFilter\=[^>]*?)\&[^>]*?$/is);							
-							$filter_url=$1.$2 if($filter_url=~m/([^>]*?)\?SelItem\=\d+(?:\;\d+)?\&[^>]*?(\&colourFilter\=[^>]*?)$/is);
-							$filter_url=~s/\&npp\=60/\&npp\=view_all/igs;
-							my $filter_page=&get_source_page($filter_url);
-							&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,$category,$sub_category,$filter_name,$filter_value); # TRANSPORTS PRODUCT_URL, TOP_MENU, MENU_2, MENU_3, FILTER AND FILTER VALUE TO PRODUCT_INSERT MODULE FOR INSERTING TAGS INTO DB (NAVIGATION: CLOTHING -> SHOP BY -> WEDDING -> THE BRIDE -> DRESSES & SEPARATES -> COLOUR -> WHITE)							
+						while($sub_category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
+						{
+							my $filter_url = $sub_category_url.$1;
+							my $filter_name = $utilityobject->Trim($2); # Colour.
+							my $filter_value = $utilityobject->Trim($3); # White.
+							$filter_url = $1.$2 if($filter_url=~m/([^>]*?)\?SelItem\=\d+(?:\;\d+)?(\&colourFilter\=[^>]*?)\&[^>]*?$/is);							
+							$filter_url = $1.$2 if($filter_url=~m/([^>]*?)\?SelItem\=\d+(?:\;\d+)?\&[^>]*?(\&colourFilter\=[^>]*?)$/is);
+							$filter_url =~ s/\&npp\=60/\&npp\=view_all/igs;
+							$filter_url = $filter_url.'&npp=view_all' unless($filter_url=~m/\&npp\=/is);
+							my $filter_page = $utilityobject->Lwp_Get($filter_url);
+							&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,$category,$sub_category,$filter_name,$filter_value); # Transports product_url, top_menu, menu_2, menu_3, filter and filter value to product_insert module for inserting tags into db (navigation: clothing -> shop by -> wedding -> the bride -> dresses & separates -> colour -> white).
 						}
 					}
 				}
-				while($menu_3_page=~m/<li\s*class\=\"\">\s*<a\s*id\=\"\d+\"\s*href\=\"([^>]*?)\">\s*([^>]*?)\s*<\/a>\s*<\/li>/igs){ # NAVIGATION: CLOTHING -> SHOP BY -> WEDDING -> MOTHER OF BRIDE
-					my $category_url=$1;
-					my $category=$2; # MOTHER OF BRIDE
-					my $category_page=&get_source_page($category_url);
+				
+				# Navigation: clothing -> shop by -> wedding -> mother of bride.
+				while($menu_3_page =~ m/<li\s*class\=\"\">\s*<a\s*id\=\"\d+\"\s*href\=\"([^>]*?)\">\s*([^>]*?)\s*<\/a>\s*<\/li>/igs)
+				{
+					my $category_url = $1;
+					my $category = $2; # Mother of bride.
+					my $category_page = $utilityobject->Lwp_Get($category_url);
 					
-					while($category_page=~m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs){
-						my $filter_url=$category_url.$1;
-						my $filter_name=&DBIL::Trim($2); # COLOUR
-						my $filter_value=&DBIL::Trim($3); # WHITE
-						$filter_url=~s/\&npp\=60/\&npp\=view_all/igs;
-						my $filter_page=&get_source_page($filter_url);
-						&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,$category,'',$filter_name,$filter_value); # TRANSPORTS PRODUCT_URL, TOP_MENU, MENU_2, MENU_3, FILTER AND FILTER VALUE TO PRODUCT_INSERT MODULE FOR INSERTING TAGS INTO DB (NAVIGATION: CLOTHING -> SHOP BY -> WEDDING -> MOTHER OF BRIDE -> COLOUR -> WHITE)
+					while($category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
+					{
+						my $filter_url = $category_url.$1;
+						my $filter_name = $utilityobject->Trim($2); # Colour.
+						my $filter_value = $utilityobject->Trim($3); # White.
+						$filter_url =~ s/\&npp\=60/\&npp\=view_all/igs;
+						$filter_url = $filter_url.'&npp=view_all' unless($filter_url=~m/\&npp\=/is);
+						my $filter_page = $utilityobject->Lwp_Get($filter_url);
+						&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,$category,'',$filter_name,$filter_value); # Transports product_url, top_menu, menu_2, menu_3, filter and filter value to product_insert module for inserting tags into db (navigation: clothing -> shop by -> wedding -> mother of bride -> colour -> white).
 					}
 				}
 			}
-			else{
-				if($menu_3_page!~m/<li\s*class\=\"\">\s*<a\s*href\=\"[^\"]*?\"\s*data\-filter\=\"[^\"]*?\">/is){
-					if($menu_3_page=~m/<li\s*class\=\"has\-children\s*selected\">\s*<a[^>]*?href\=\"([^>]*?)\">\s*((?!All)[^<]*?)\s*<\/a>/is){ # ENTRY WHEN SUB CATEGORY IS SELECTED
-						while($menu_3_page=~m/<li\s*class\=\"has\-children\s*selected\">\s*<a[^>]*?href\=\"([^>]*?)\">\s*((?!All)[^<]*?)\s*<\/a>/igs){ # NAVIGATION: LINGERIE -> SHOP BY -> BRAS -> BRAS
-							my $category_url=$home_url.$1;
-							my $category=&DBIL::Trim($2); # ACTIVEWEAR
-							my $category_page=&get_source_page($category_url);							
+			else
+			{
+				if($menu_3_page !~ m/<li\s*class\=\"\">\s*<a\s*href\=\"[^\"]*?\"\s*data\-filter\=\"[^\"]*?\">/is)
+				{
+					# Entry when sub category is selected.
+					if($menu_3_page =~ m/<li\s*class\=\"has\-children\s*selected\">\s*<a[^>]*?href\=\"([^>]*?)\">\s*((?!All)[^<]*?)\s*<\/a>/is)
+					{
+						# Navigation: lingerie -> shop by -> bras -> bras.
+						while($menu_3_page =~ m/<li\s*class\=\"has\-children\s*selected\">\s*<a[^>]*?href\=\"([^>]*?)\">\s*((?!All)[^<]*?)\s*<\/a>/igs)
+						{
+							my $category_url = $1;
+							$category_url = $home_url.$category_url unless($category_url=~m/^http/is);
+							my $category = $utilityobject->Trim($2); # Activewear.
+							my $category_page = $utilityobject->Lwp_Get($category_url);							
 							
-							if($category_page=~m/<li\s*class\=\"\">\s*<a\s*href\=\"[^\"]*?\"\s*data\-filter\=\"[^\"]*?\">/is){
-								while($category_page=~m/<li\s*class\=\"\">\s*<a\s*href\=\"([^\"]*?)\"\s*data\-filter\=\"([^\"]*?)\">/igs){ # NAVIGATION: LINGERIE -> SHOP BY -> BRAS -> BRAS -> DD PLUS BRA
-									my $sub_category_url=$home_url.$1;
-									my $sub_category=&DBIL::Trim($2); # DD PLUS BRA
-									my $sub_category_page=&get_source_page($sub_category_url);
+							if($category_page =~ m/<li\s*class\=\"\">\s*<a\s*href\=\"[^\"]*?\"\s*data\-filter\=\"[^\"]*?\">/is)
+							{
+								# Navigation: lingerie -> shop by -> bras -> bras -> dd plus bra.
+								while($category_page =~ m/<li\s*class\=\"\">\s*<a\s*href\=\"([^\"]*?)\"\s*data\-filter\=\"([^\"]*?)\">/igs)
+								{
+									my $sub_category_url = $1;
+									$sub_category_url = $home_url.$sub_category_url unless($sub_category_url =~ m/^http/is);
+									my $sub_category = $utilityobject->Trim($2); # DD plus bra.
+									my $sub_category_page = $utilityobject->Lwp_Get($sub_category_url);
 									
-									while($sub_category_page=~m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs){
-										my $filter_url=$sub_category_url.$1;
-										my $filter_name=&DBIL::Trim($2); # COLOUR
-										my $filter_value=&DBIL::Trim($3); # WHITE
-										$filter_url=~s/^([^>]*?)\?((colour)Filter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;									
-										$filter_url=~s/\&npp\=60/\&npp\=view_all/igs;
-										my $filter_page=&get_source_page($filter_url);
-										&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,$category,$sub_category,$filter_name,$filter_value); # TRANSPORTS PRODUCT_URL, TOP_MENU, MENU_2, MENU_3, FILTER AND FILTER VALUE TO PRODUCT_INSERT MODULE FOR INSERTING TAGS INTO DB (NAVIGATION: LINGERIE -> SHOP BY -> BRAS -> BRAS -> DD PLUS BRA -> COLOUR -> WHITE)
+									while($sub_category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
+									{
+										my $filter_url = $sub_category_url.$1;
+										my $filter_name = $utilityobject->Trim($2); # Colour
+										my $filter_value = $utilityobject->Trim($3); # White.
+										$filter_url =~ s/^([^>]*?)\?((colour)Filter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;									
+										$filter_url =~ s/\&npp\=60/\&npp\=view_all/igs;
+										$filter_url = $filter_url.'&npp=view_all' unless($filter_url =~ m/\&npp\=/is);
+										my $filter_page=$utilityobject->Lwp_Get($filter_url);
+										&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,$category,$sub_category,$filter_name,$filter_value); # Transports product_url, top_menu, menu_2, menu_3, filter and filter value to product_insert module for inserting tags into db (navigation: lingerie -> shop by -> bras -> bras -> dd plus bra -> colour -> white).
 									}
 								}
 							}
-							else{ # NAVIGATION: WHAT'S NEW -> SHOP BY -> THIS WEEK -> CLOTHING
-								while($category_page=~m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs){
-									my $filter_url=$category_url.$1;
-									my $filter_name=&DBIL::Trim($2); # COLOUR
-									my $filter_value=&DBIL::Trim($3); # WHITE
-									$filter_url=~s/\&npp\=60/\&npp\=view_all/igs;
-									my $filter_page=&get_source_page($filter_url);
-									&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,$category,'',$filter_name,$filter_value); # TRANSPORTS PRODUCT_URL, TOP_MENU, MENU_2, MENU_3, FILTER AND FILTER VALUE TO PRODUCT_INSERT MODULE FOR INSERTING TAGS INTO DB (NAVIGATION: WHAT'S NEW -> SHOP BY -> THIS WEEK -> CLOTHING -> COLOUR -> WHITE)
+							else # Navigation: what's new -> shop by -> this week -> clothing.
+							{
+								while($category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
+								{
+									my $filter_url = $category_url.$1;
+									my $filter_name = $utilityobject->Trim($2); # Colour.
+									my $filter_value = $utilityobject->Trim($3); # White.
+									$filter_url =~ s/\&npp\=60/\&npp\=view_all/igs;
+									$filter_url = $filter_url.'&npp=view_all' unless($filter_url =~ m/\&npp\=/is);
+									my $filter_page=$utilityobject->Lwp_Get($filter_url);
+									&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,$category,'',$filter_name,$filter_value); # Transports product_url, top_menu, menu_2, menu_3, filter and filter value to product_insert module for inserting tags into db (navigation: what's new -> shop by -> this week -> clothing -> colour -> white).
 								}
+							}
+						}
+					}
+					elsif($top_menu=~m/^Sale/is) 
+					{
+						if($menu_3_page =~ m/<div\s*class\=\"filter\s*level\d+\">/is) # when category is available under menu_3.
+						{
+							while($menu_3_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"\?([^>]*?)\"\s*title\=\"([^>]*?)\"\s*data\-filter\=\"[^>]*?\">/igs){
+								my $category_url = $menu_3_url.'&'.$1;
+								my $category = $2;							
+								my $category_page = $utilityobject->Lwp_Get($category_url);
+								
+								while($category_page=~m/<a\s*class\=\"filter_name\"\s*href\=\"([^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
+								{
+									my $filter_url = $home_url.$1;
+									my $filter_name = $utilityobject->Trim($2); # Colour.
+									my $filter_value = $utilityobject->Trim($3); # Black.
+									$filter_url =~ s/amp\;//igs;
+									$filter_url =~ s/\&npp\=60/\&npp\=view_all/igs;
+									$filter_url = $filter_url.'&npp=view_all' unless($filter_url=~m/\&npp\=/is);
+									my $filter_page = $utilityobject->Lwp_Get($filter_url);									
+									&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,$category,'',$filter_name,$filter_value); # Transports product_url, top_menu, menu_2, menu_3, category, filter and filter value to product_insert module for inserting tags into db (navigation: sale -> shop sale by category -> dresses -> mini -> colour -> black).
+								}
+							}
+						}
+						else
+						{
+							while($menu_3_page=~m/<a\s*class\=\"filter_name\"\s*href\=\"([^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
+							{
+								my $filter_url = $home_url.$1;
+								my $filter_name = $utilityobject->Trim($2); # Colour.
+								my $filter_value = $utilityobject->Trim($3); # Black.
+								$filter_url =~ s/\&npp\=60/\&npp\=view_all/igs;
+								$filter_url = $filter_url.'&npp=view_all' unless($filter_url=~m/\&npp\=/is);
+								my $filter_page = $utilityobject->Lwp_Get($filter_url);								
+								&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,'','',$filter_name,$filter_value); # # Transports product_url, top_menu, menu_2, menu_3, filter and filter value to product_insert module for inserting tags into db (navigation: sale -> shop sale by category -> backpacks -> colour -> black).
 							}
 						}
 					}
 					else
 					{
-						while($menu_3_page=~m/<a[^>]*?href\=\"(\/Shop[^\"]*?)\">\s*((?!All)[^<]*?)\s*<\/a>\s*<\/li>/igs){ # NAVIGATION: CLOTHING -> SHOP BY -> ACTIVEWEAR -> ACTIVEWEAR
-							my $category_url=$home_url.$1;
-							my $category=&DBIL::Trim($2); # ACTIVEWEAR
-							my $category_page=&get_source_page($category_url);							
+						# Navigation: clothing -> shop by -> activewear -> activewear.
+						# while($menu_3_page =~ m/<a[^>]*?href\=\"(\/Shop[^\"]*?)\">\s*((?!All)[^<]*?)\s*<\/a>\s*<\/li>/igs)
+						while($menu_3_page =~ m/<a[^>]*?href\=\"(\/Shop[^\"]*?)\">\s*<img[^>]*?alt\=\"([^\"]*?)\"\s*\/>/igs)
+						{
+							my $category_url = $1;
+							$category_url = $home_url.$category_url unless($category_url =~ m/^http/is);
+							my $category = $utilityobject->Trim($2); # Activewear.
+							my $category_page = $utilityobject->Lwp_Get($category_url);							
 							
-							if($category_page=~m/<li\s*class\=\"\">\s*<a\s*href\=\"[^\"]*?\"\s*data\-filter\=\"[^\"]*?\">/is){
-								while($category_page=~m/<li\s*class\=\"\">\s*<a\s*href\=\"([^\"]*?)\"\s*data\-filter\=\"([^\"]*?)\">/igs){ # NAVIGATION: CLOTHING -> SHOP BY -> ACTIVEWEAR -> ACTIVEWEAR -> TOPS
-									my $sub_category_url=$home_url.$1;
-									my $sub_category=&DBIL::Trim($2); # TOPS
-									my $sub_category_page=&get_source_page($sub_category_url);
+							# if($category_page =~ m/<li\s*class\=\"\">\s*<a\s*href\=\"[^\"]*?\"\s*data\-filter\=\"[^\"]*?\">/is)
+							if($category_page =~ m/<a\s*class\=\"filter_checkbox\"\s*href\=\"([^\"]*?)\"\s*title\=\"[^\"]*?\"\s*data\-filter\=\"([^\"]*?)\">/is)
+							{
+								# Navigation: clothing -> shop by -> activewear -> activewear -> tops.
+								while($category_page =~ m/<a\s*class\=\"filter_checkbox\"\s*href\=\"\?([^\"]*?)\"\s*title\=\"[^\"]*?\"\s*data\-filter\=\"([^\"]*?)\">/igs)
+								{
+									my $sub_category_url = $1;
+									my $sub_category = $utilityobject->Trim($2); # Tops.
+									$sub_category_url = $category_url.'&'.$sub_category_url unless($sub_category_url=~m/^http/is);
+									my $sub_category_page = $utilityobject->Lwp_Get($sub_category_url);
 									
-									while($sub_category_page=~m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs){
-										my $filter_url=$sub_category_url.$1;
-										my $filter_name=&DBIL::Trim($2); # COLOUR
-										my $filter_value=&DBIL::Trim($3); # WHITE
-										$filter_url=~s/^([^>]*?)\?((colour)Filter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;									
-										$filter_url=~s/\&npp\=60/\&npp\=view_all/igs;
-										my $filter_page=&get_source_page($filter_url);
-										&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,$category,$sub_category,$filter_name,$filter_value); # TRANSPORTS PRODUCT_URL, TOP_MENU, MENU_2, MENU_3, FILTER AND FILTER VALUE TO PRODUCT_INSERT MODULE FOR INSERTING TAGS INTO DB (NAVIGATION: CLOTHING -> SHOP BY -> ACTIVEWEAR -> ACTIVEWEAR -> TOPS -> COLOUR -> WHITE)
+									while($sub_category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"([^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
+									{
+										my $filter_url = $home_url.$1;
+										my $filter_name = $utilityobject->Trim($2); # Colour.
+										my $filter_value = $utilityobject->Trim($3); # White.
+										$filter_url =~ s/^([^>]*?)\?((colour)Filter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;
+										$filter_url =~ s/\&npp\=60/\&npp\=view_all/igs;
+										$filter_url = $filter_url.'&npp=view_all' unless($filter_url=~m/\&npp\=/is);
+										my $filter_page = $utilityobject->Lwp_Get($filter_url);
+										&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,$category,$sub_category,$filter_name,$filter_value); # Transports product_url, top_menu, menu_2, menu_3, filter and filter value to product_insert module for inserting tags into db (navigation: clothing -> shop by -> activewear -> activewear -> tops -> colour -> white).
 									}
 								}
 							}
-							else{ # NAVIGATION: WHAT'S NEW -> SHOP BY -> THIS WEEK -> CLOTHING
-								while($category_page=~m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs){
-									my $filter_url=$category_url.$1;
-									my $filter_name=&DBIL::Trim($2); # COLOUR
-									my $filter_value=&DBIL::Trim($3); # WHITE
-									$filter_url=~s/\&npp\=60/\&npp\=view_all/igs;
-									my $filter_page=&get_source_page($filter_url);
-									&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,$category,'',$filter_name,$filter_value); # TRANSPORTS PRODUCT_URL, TOP_MENU, MENU_2, MENU_3, FILTER AND FILTER VALUE TO PRODUCT_INSERT MODULE FOR INSERTING TAGS INTO DB (NAVIGATION: WHAT'S NEW -> SHOP BY -> THIS WEEK -> CLOTHING -> COLOUR -> WHITE)
+							else # Navigation: what's new -> shop by -> this week -> clothing.
+							{
+								while($category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
+								{
+									my $filter_url = $category_url.$1;
+									my $filter_name = $utilityobject->Trim($2); # Colour.
+									my $filter_value = $utilityobject->Trim($3); # White.
+									$filter_url =~ s/\&npp\=60/\&npp\=view_all/igs;
+									$filter_url = $filter_url.'&npp=view_all' unless($filter_url =~ m/\&npp\=/is);
+									my $filter_page=$utilityobject->Lwp_Get($filter_url);
+									&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,$category,'',$filter_name,$filter_value); # Transports product_url, top_menu, menu_2, menu_3, filter and filter value to product_insert module for inserting tags into db (navigation: what's new -> shop by -> this week -> clothing -> colour -> white).
 								}
 							}
 						}
 					}
 				}
-				else{
-					while($menu_3_page=~m/<li\s*class\=\"\">\s*<a\s*href\=\"([^\"]*?)\"\s*data\-filter\=\"([^\"]*?)\">/igs){ # NAVIGATION: CLOTHING -> SHOP BY -> SHORTS -> DENIM
-						my $sub_category_url=$home_url.$1;
-						my $sub_category=&DBIL::Trim($2); # DENIM
-						my $sub_category_page=&get_source_page($sub_category_url);
+				else
+				{
+					while($menu_3_page =~ m/<li\s*class\=\"\">\s*<a\s*href\=\"([^\"]*?)\"\s*data\-filter\=\"([^\"]*?)\">/igs) # Navigation: clothing -> shop by -> shorts -> denim.
+					{
+						my $sub_category_url = $1;
+						$sub_category_url = $home_url.$sub_category_url unless($sub_category_url=~m/^http/is);
+						my $sub_category = $utilityobject->Trim($2); # Denim.
+						my $sub_category_page = $utilityobject->Lwp_Get($sub_category_url);
 						
-						while($sub_category_page=~m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs){
-							my $filter_url=$sub_category_url.$1;
-							my $filter_name=&DBIL::Trim($2); # COLOUR
-							my $filter_value=&DBIL::Trim($3); # BLUE
-							$filter_url=~s/^([^>]*?)\?((colour)Filter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;							
-							$filter_url=~s/\&npp\=60/\&npp\=view_all/igs;
-							my $filter_page=&get_source_page($filter_url);
-							&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,'',$sub_category,$filter_name,$filter_value); # TRANSPORTS PRODUCT_URL, TOP_MENU, MENU_2, MENU_3, FILTER AND FILTER VALUE TO PRODUCT_INSERT MODULE FOR INSERTING TAGS INTO DB (NAVIGATION: CLOTHING -> SHOP BY -> SHORTS -> DENIM -> COLOUR -> BLUE)
+						while($sub_category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
+						{
+							my $filter_url = $sub_category_url.$1;
+							my $filter_name = $utilityobject->Trim($2); # Colour.
+							my $filter_value = $utilityobject->Trim($3); # Blue.
+							$filter_url =~ s/^([^>]*?)\?((colour)Filter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;							
+							$filter_url =~ s/\&npp\=60/\&npp\=view_all/igs;
+							$filter_url = $filter_url.'&npp=view_all' unless($filter_url =~ m/\&npp\=/is);
+							my $filter_page = $utilityobject->Lwp_Get($filter_url);
+							&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,'',$sub_category,$filter_name,$filter_value); # Transports product_url, top_menu, menu_2, menu_3, filter and filter value to product_insert module for inserting tags into db (navigation: clothing -> shop by -> shorts -> denim -> colour -> blue).
 						}
 					}
 				}
@@ -232,99 +326,136 @@ while($source_page=~m/<a\s*class\=\"top\-nav\-link[^>]*?\"\s*href\=\"[^>]*?\">\s
 		}
 	}
 }
+
+# Products under sale menu.
+if($source_page =~ m/<a\s*class\=\"top\-nav\-link[^>]*?\"\s*href\=\"[^>]*?\">\s*(Sale)\s*<\/a>\s*([\w\W]*?)\s*<\/div>\s*<\/div>\s*<\/div>\s*<\/li>/is){
+	my $top_menu = $utilityobject->Trim($1); # Sale.
+	my $top_menu_block = $2;
+	
+	if($top_menu_block =~ m/<div\s*class\=\"header\s*border\-bottom[^>]*?\">\s*([^>]*?)\s*<\/div>\s*([\w\W]*?\s*<\/div>)\s*<\/div>/is){
+		my $menu_2 = $1; # Shop sale by category.
+		my $menu_2_block = $2;
+		
+		while($menu_2_block =~ m/<a[^>]*?href\=\"([^>]*?)\"\s*>\s*((?!The\s*Trend\s*Report|\s*All\s*Categories|Sale\s*Designers)[^>]*?)\s*<\/a>/igs){
+			my $menu_3_url = $1;
+			my $menu_3 = $utilityobject->Trim($2); # Dresses.
+			$menu_3_url = $home_url.$menu_3_url unless($menu_3_url =~ m/^http/is);
+			my $menu_3_page = $utilityobject->Lwp_Get($menu_3_url);
+			
+			if($menu_3 =~ m/new\s*to\s*sale/is){
+				while($menu_3_page =~ m/<a\s*class\=\"filter_checkbox\"\s*href\=\"([^>]*?)\">\s*((?!All)[^<]*?)\s*<\/a>/igs){
+					my $menu_4_url = $1;
+					my $menu_4 = $2;
+					$menu_4_url = $home_url.$menu_4_url unless($menu_4_url =~ m/^http/is);
+					my $menu_4_page = $utilityobject->Lwp_Get($menu_4_url);
+					
+					while($menu_4_page=~m/<a\s*class\=\"filter_name\"\s*href\=\"\?([^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs){
+						my $append_url = $1.'&npp=view_all';
+						my $filter_name = $utilityobject->Trim($2); # Colour.
+						my $filter_value = $utilityobject->Trim($3); # White.						
+						
+						my $filter_url = $menu_4_url.'?'.$append_url;
+						my $filter_page = $utilityobject->Lwp_Get($filter_url);
+						&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,$menu_4,'',$filter_name,$filter_value);
+					}
+				}
+			}
+			elsif($menu_3 =~ m/^All/is){
+				if($menu_3_page =~ m/<ul\s*id\=\"main\-nav\">\s*([\w\W]*?)\s*<\/ul>/is){
+					my $menu_3_block = $1;
+					
+					while($menu_3_block =~ m/<a\s*href\=\"([^>]*?)\">\s*([^>]*?)\s*<\/a>/igs){
+						my $menu_4_url = $1;
+						my $menu_4 = $2;
+						$menu_4_url = $home_url.$menu_4_url unless($menu_4_url =~ m/^http/is);
+						my $menu_4_page = $utilityobject->Lwp_Get($menu_4_url);
+						
+						while($menu_4_page=~m/<a\s*class\=\"filter_name\"\s*href\=\"\?([^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs){
+							my $append_url = $1.'&npp=view_all';
+							my $filter_name = $utilityobject->Trim($2); # Colour.
+							my $filter_value = $utilityobject->Trim($3); # White.						
+							
+							my $filter_url = $menu_4_url.'?'.$append_url;
+							my $filter_page = $utilityobject->Lwp_Get($filter_url);
+							&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,$menu_4,'',$filter_name,$filter_value);
+						}
+					
+						while($menu_4_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"([^>]*?)\"\s*title\=\"([^\"]*?)\"\s*data\-filter/igs){
+							my $menu_5_url = $1.'&npp=view_all';
+							my $menu_5 = $2;
+							$menu_5_url = $menu_4_url.$menu_5_url unless($menu_5_url =~ m/^http/is);
+							my $menu_5_page = $utilityobject->Lwp_Get($menu_5_url);
+							&Product_Insert($menu_5_page,$top_menu,$menu_2,$menu_3,$menu_4,$menu_5,'','');
+						}
+					}
+				}
+			}
+			else{
+				while($menu_3_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"\?([^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs){
+					my $append_url = $1.'&npp=view_all';
+					my $filter_name = $utilityobject->Trim($2); # Colour.
+					my $filter_value = $utilityobject->Trim($3); # White.						
+					
+					my $filter_url = $menu_3_url.'?'.$append_url;
+					my $filter_page = $utilityobject->Lwp_Get($filter_url);
+					&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,'','',$filter_name,$filter_value);
+				}
+				
+				while($menu_3_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"([^>]*?)\"\s*title\=\"([^\"]*?)\"\s*data\-filter/igs){
+					my $menu_4_url = $1.'&npp=view_all';
+					my $menu_4 = $2;
+					$menu_4_url = $menu_3_url.$menu_4_url unless($menu_4_url =~ m/^http/is);
+					my $menu_4_page = $utilityobject->Lwp_Get($menu_4_url);
+					&Product_Insert($menu_4_page,$top_menu,$menu_2,$menu_3,$menu_4,'','','');
+				}
+			}
+		}
+	}
+}
 undef $source_page;
-$dbh->commit();
-$dbh->disconnect();
 
-system(`/opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Net-a-porter-US--Detail.pl  &`);
-
-#################### For Dashboard #######################################
-DBIL::Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'STOP',$robotname);
-#################### For Dashboard #######################################
-
-###### <-- LIST ROBOT - END --> ########
-
-sub Product_Insert(){ # INSERT TAGS INTO DB
-	my $page=shift;
-	my $top_menu=shift;
-	my $menu_2=shift;
-	my $menu_3=shift;
-	my $category=shift;
-	my $sub_category=shift;
-	my $filter=shift;
-	my $filter_value=shift;
+# URL collection.
+sub Product_Insert()
+{
+	my $page = shift;
+	my $top_menu = shift;
+	my $menu_2 = shift;
+	my $menu_3 = shift;
+	my $category = shift;
+	my $sub_category = shift;
+	my $filter = shift;
+	my $filter_value = shift;
 	
-	while($page=~m/<div\s*class\=\"description\"><a\s*href\=\"([^<]*?(\d+))[^>]*?\"\s*title\=\"[^\"]*?\">/igs){
-		my $product_url=$home_url.$1;
+	# Pattern match of url from list page.
+	while($page =~ m/<div\s*class\=\"description\">\s*<a\s*href\=\"([^<]*?(\d+))[^>]*?\"\s*title\=\"[^\"]*?\"[^>]*?>/igs)
+	{
+		my $product_url = $home_url.$1;
 		my $product_object_key;
-		if($validate{$product_url} eq ''){ # CHECKING WHETHER PRODUCT URL ALREADY AVAILABLE IN THE HASH TABLE
-			$product_object_key=&DBIL::SaveProduct($product_url,$dbh,$robotname,$retailer_id,$Retailer_Random_String,$excuetionid); # GENERATING UNIQUE PRODUCT ID
-			$validate{$product_url}=$product_object_key; # STORING PRODUCT_ID INTO HASH TABLE
+		
+		# Checking whether product URL already stored in the database. If exist then existing ObjectKey is re-initialized to the URL.
+		if($totalHash{$product_url} eq '')
+		{			
+			$product_object_key = $dbobject->SaveProduct($product_url,$robotname,$retailer_id,$Retailer_Random_String);
+			$totalHash{$product_url} = $product_object_key;
 		}
-		$product_object_key=$validate{$product_url}; # USING EXISTING PRODUCT_ID IF THE HASH TABLE CONTAINS THIS URL		
-		&DBIL::SaveTag('Menu_1',$top_menu,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid) if($top_menu ne '');
-		&DBIL::SaveTag('Menu_2',$menu_2,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid) if($menu_2 ne '');	
-		&DBIL::SaveTag('Menu_3',$menu_3,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid) if($menu_3 ne '');
-		&DBIL::SaveTag($category,$sub_category,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid) if(($category ne '') && ($sub_category ne ''));
-		&DBIL::SaveTag('category',$category,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid) if(($category ne '') && ($sub_category eq ''));
-		&DBIL::SaveTag('sub category',$sub_category,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid) if(($category eq '') && ($sub_category ne ''));
-		&DBIL::SaveTag($filter,$filter_value,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid) if(($filter ne '') && ($filter_value ne ''));
-		$dbh->commit();
+		$product_object_key = $totalHash{$product_url}; # Using existing product_id if the hash table contains this url.
+		
+		# Storing menus into database.
+		$dbobject->SaveTag('Menu_1',$top_menu,$product_object_key,$robotname,$Retailer_Random_String) if($top_menu ne '');
+		$dbobject->SaveTag('Menu_2',$menu_2,$product_object_key,$robotname,$Retailer_Random_String) if($menu_2 ne '');
+		$dbobject->SaveTag('Menu_3',$menu_3,$product_object_key,$robotname,$Retailer_Random_String) if($menu_3 ne '');		
+		$dbobject->SaveTag('category',$category,$product_object_key,$robotname,$Retailer_Random_String) if($category ne '');
+		$dbobject->SaveTag('sub category',$sub_category,$product_object_key,$robotname,$Retailer_Random_String) if($sub_category ne '');
+		$dbobject->SaveTag($filter,$filter_value,$product_object_key,$robotname,$Retailer_Random_String) if(($filter ne '') && ($filter_value ne ''));
+		$dbobject->commit();
 	}
 }
 
-sub FC(){ # REMOVES FOREIGN CHARACTERS
-	my $text=shift;
-	$text=decode_entities($text);
-	return $text;
-}
+# End of List collection.
+$logger->send("$robotname :: Instance Completed  :: $pid\n");
 
-sub get_source_page(){ # FETCH SOURCE PAGE CONTENT FOR THE GIVEN URL
-	my $url=shift;
-	my $rerun_count=0;
-	$url=~s/^\s+|\s+$//g;
-	Repeat:
-	my $request=HTTP::Request->new(GET=>$url);
-	$request->header("Accept"=>"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"); 
-    $request->header("Content-Type"=>"application/x-www-form-urlencoded");
-	my $response=$ua->request($request);
-	$cookie->extract_cookies($response);
-	$cookie->save;
-	$cookie->add_cookie_header($request);
-	my $code=$response->code;
-	
-	######## WRITING LOG INTO /var/tmp/Retailer/$retailer_file #######
-	
-	open JJ,">>$retailer_file";
-	print JJ "$url->$code\n";
-	close JJ;
-	
-	##################################################################
-	
-	my $content;
-	if($code=~m/20/is){
-		$content=$response->content;
-		return $content;
-	}
-	elsif($code=~m/30/is){
-		my $loc=$response->header('location');                
-        $loc=decode_entities($loc);    
-        my $loc_url=url($loc,$url)->abs;        
-        $url=$loc_url;
-        goto Repeat;
-	}
-	elsif($code=~m/40/is){
-		if($rerun_count <= 3){
-			$rerun_count++;			
-			goto Repeat;
-		}
-		return 1;
-	}
-	else{
-		if($rerun_count <= 3){
-			$rerun_count++;			
-			goto Repeat;
-		}
-		return 1;
-	}
-}
+# Saving end time in dashboard.
+$dbobject->Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'STOP',$robotname);
+
+# Commit the Transaction.
+$dbobject->commit();

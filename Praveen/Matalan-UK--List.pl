@@ -1,124 +1,131 @@
 #!/opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl
-########## MODULE INITIALIZATION ###########
 
+# Required modules are initialized.
 use strict;
 use LWP::UserAgent;
-use HTML::Entities;
-use HTTP::Cookies;
-use DBI;
-require "/opt/home/merit/Merit_Robots/DBILv3/DBIL.pm"; # USER DEFINED MODULE DBIL.PM
+use Log::Syslog::Fast ':all';
+use Net::Domain qw(hostname);
+use Config::Tiny;
 
-###########################################
+require "/opt/home/merit/Merit_Robots/anorak-worker/AnorakDB.pm";
+require "/opt/home/merit/Merit_Robots/anorak-worker/AnorakUtility.pm";
 
-######### VARIABLE INITIALIZATION ##########
+# Location of the config file with all settings.
+my $ini_file = '/opt/home/merit/Merit_Robots/anorak-worker/anorak-worker.ini';
 
-my $robotname=$0;
-$robotname=~s/\.pl//igs;
-$robotname =$1 if($robotname=~m/[^>]*?\/*([^\/]+?)\s*$/is);
+# Robotname is constructed from file name.
+my $robotname = $0;
+$robotname =~ s/\.pl//igs;
+$robotname =$1 if($robotname =~ m/[^>]*?\/*([^\/]+?)\s*$/is);
 my $retailer_name=$robotname;
-$retailer_name=~s/\-\-List\s*$//igs;
-$retailer_name=lc($retailer_name);
+$retailer_name =~ s/\-\-List\s*$//igs;
+$retailer_name = lc($retailer_name);
 my $Retailer_Random_String='Mat';
-my $pid=$$;
-my $ip=`/sbin/ifconfig eth0 | grep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`;
-$ip=$1 if($ip=~m/inet\s*addr\:([^>]*?)\s+/is);
-my $excuetionid=$ip.'_'.$pid;
 
-#############################################
+# Execution ID is formed by combining Process ID and IP address.
+my $pid = $$;
+my $ip = `/sbin/ifconfig eth0 | grep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`;
+$ip = $1 if($ip =~ m/inet\s*addr\:([^>]*?)\s+/is);
+my $executionid = $ip.'_'.$pid;
+my %totalHash;
 
-######### PROXY INITIALIZATION ##############
-
-my $country=$1 if($robotname=~m/\-([A-Z]{2})\-\-/is);
-&DBIL::ProxyConfig($country);
-
-#############################################
-
-######### USER AGENT #######################
-
-my $ua=LWP::UserAgent->new(show_progress=>1);
+# Creating user agent (Mozilla Firefox).
+my $ua = LWP::UserAgent->new(show_progress=>1);
 $ua->agent("Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 (.NET CLR 3.5.30729)");
 $ua->timeout(30); 
 $ua->cookie_jar({});
-$ua->env_proxy;
 
-############################################
+# Read the settings from the configuration file.
+my $ini = Config::Tiny->new;
+$ini = Config::Tiny->read($ini_file);
+if (!defined $ini)
+{
+	# Die if reading the settings failed.
+	die "FATAL: ", Config::Tiny->errstr;
+}
 
-######### COOKIE FILE CREATION ############
+# Setup logging to syslog.
+my $logger = Log::Syslog::Fast->new(LOG_UDP, $ini->{logs}->{server}, $ini->{logs}->{port}, LOG_LOCAL3, LOG_INFO, $ip,'aw-'. $pid . '@' . $ip );
 
-my ($cookie_file,$retailer_file)=&DBIL::LogPath($robotname);
-my $cookie=HTTP::Cookies->new(file=>$cookie_file,autosave=>1); 
-$ua->cookie_jar($cookie);
+# Connect to AnorakDB package.
+my $dbobject = AnorakDB->new($logger,$executionid);
+$dbobject->connect($ini->{mysql}->{host}, $ini->{mysql}->{port}, $ini->{mysql}->{name}, $ini->{mysql}->{user}, $ini->{mysql}->{pass});
 
-############################################
+# Connect to Utility package.
+my $utilityobject = AnorakUtility->new($logger,$ua);
 
-######### ESTABLISHING DB CONNECTION #######
+# Get Retailer_id & Proxy details.
+my ($retailer_id,$ProxySetting) = $dbobject->GetRetailerProxy($retailer_name);
+$dbobject->RetailerUpdate($retailer_id,$robotname,'start');
 
-my $dbh=&DBIL::DbConnection();
+# Set the proxy environment.
+$utilityobject->SetEnv($ProxySetting);
 
-############################################
- 
-my $select_query="select ObjectKey from Retailer where name=\'$retailer_name\'";
-my $retailer_id=&DBIL::Objectkey_Checking($select_query, $dbh, $robotname);
+# Saving start time in dashboard.
+$dbobject->Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'START',$robotname);
 
-# ROBOT START PROCESS TIME STORED INTO RETAILER TABLE FOR RUNTIME MANIPULATION
-&DBIL::RetailerUpdate($retailer_id,$excuetionid,$dbh,$robotname,'start');
+$logger->send("$robotname :: Instance Started :: $pid\n");
 
-#################### For Dashboard #######################################
-&DBIL::Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'START',$robotname);
-#################### For Dashboard #######################################
+# Retailer home page content.
+my $home_url = 'http://www.matalan.co.uk';
+my $source_page = $utilityobject->Lwp_Get($home_url);
 
-###### <-- LIST ROBOT - BEGIN --> ########
-
-my $home_url='http://www.matalan.co.uk'; # RETAILER HOME URL : MATALAN, UK
-my $source_page=&get_source_page($home_url);
-
-my %validate;
-while($source_page=~m/dept\-((?!home\b|style|in|reward|sport)[^>]*?)\">\s*<a\s*class\=\"\s*link\"\s*href\=\"([^>]*?)\"/igs){ # EXTRACTING TOP MENU/URL -> WOMENS, MENS, BOYS, GIRLS, SHOES,HOMEWARE AND SALE
-	my $top_menu=FC($1); # WOMEN
-	my $top_menu_url=$home_url.$2;	
-	my $top_menu_page=&get_source_page($top_menu_url);
+# Extracting top menu/url -> womens, mens, boys, girls, shoes,homeware and sale.
+# while($source_page =~ m/dept\-((?!home\b|style|in|reward|sport)[^>]*?)\">\s*<a\s*class\=\"\s*link\"\s*href\=\"([^>]*?)\"/igs)
+while($source_page =~ m/<nav\s*id\=\"dept\-((?!home\b|style|in|reward|sport|life)[^\"]*?)\"\s*class\=\"drop\-nav\">\s*([\w\W]*?)\s*<\/nav>/igs)
+{
+	my $top_menu = $utilityobject->Trim($1); # Women.
+	my $top_menu_page = $2;
+	# my $top_menu_url = $home_url.$2;	
+	# my $top_menu_page = $utilityobject->Lwp_Get($top_menu_url);
 	
-	if($top_menu_page=~m/<nav\s*id\=\"section\-nav\">\s*([\w\W]*?)\s*<\/nav>/is){ # LHM FULL BLOCK
-		my $menu_block=$1;
-		undef $top_menu_page;
+	# LHM full block.
+	# if($top_menu_page =~ m/<nav\s*id\=\"section\-nav\">\s*([\w\W]*?)\s*<\/nav>/is)
+	# {
+		# my $menu_block = $1;		
 		
-		# LHM -> EXTRACTING SEPARATE BLOCKS FOR EACH MENU_2
-		while($menu_block=~m/<h4>\s*<span\s*class\=\"\s*link\">\s*([^>]*?)\s*<\/span>\s*<\/h4>\s*([\w\W]*?)\s*<\/ul>/igs){
-			my $menu_2=FC($1); # Women's Highlights
-			my $menu_2_block=$2;
+		# LHM -> extracting separate blocks for each menu_2.
+		# while($menu_block =~ m/<h4>\s*<span\s*class\=\"\s*link\">\s*([^>]*?)\s*<\/span>\s*<\/h4>\s*([\w\W]*?)\s*<\/ul>/igs)
+		while($top_menu_page =~ m/<h4>\s*<span\s*class\=\"\s*link\">\s*([^>]*?)\s*<\/span>\s*<\/h4>\s*([\w\W]*?)\s*<\/ul>/igs)
+		{
+			my $menu_2 = $utilityobject->Trim($1); # Women's Highlights
+			my $menu_2_block = $2;
 			
-			# LHM -> EXTRACTING MENU_3/URL FROM EACH MENU_2 BLOCK
-			while($menu_2_block=~m/<a\s*class\=\"\s*link\"\s*href\=\"([^>]*?)\"\s*title\=\"[^>]*?\">\s*([^>]*?)\s*<\/a>/igs){
-				my $menu_3_url=$home_url.$1;
-				my $menu_3=FC($2); # NEW ARRIVALS				
-				my $part_filter_url=$menu_3_url;				
-				$menu_3_url=$menu_3_url.'?size=120&page=1'; # DISPLAYS 120(MAXIMUM) PRODUCTS PER PAGE				
-				my $menu_3_page=&get_source_page($menu_3_url);
-				&Product_Insert($menu_3_url,$menu_3_page,$top_menu,$menu_2,$menu_3); # TRANSPORTS PRODUCT_URL, TOP_MENU, MENU_2 AND MENU_3 TO PRODUCT_INSERT MODULE FOR INSERTING TAGS INTO DB (NAVIGATION EXAMPLE : Menu_1(WOMEN) -> Menu_2(WOMEN'S HIGHLIGHTS) -> Menu_3(NEW ARRIVALS))
-				# EXTRACTING PRODUCT URL
+			# LHM -> extracting menu_3/url from each menu_2 block
+			while($menu_2_block =~ m/<a\s*class\=\"\s*link\"\s*href\=\"([^>]*?)\"\s*title\=\"[^>]*?\">\s*([^>]*?)\s*<\/a>/igs)
+			{
+				my $menu_3_url = $home_url.$1;
+				my $menu_3 = $utilityobject->Trim($2); # New arrivals.
+				my $part_filter_url = $menu_3_url;				
+				$menu_3_url = $menu_3_url.'?size=120&page=1'; # Displays 120(maximum) products per page.
+				my $menu_3_page = $utilityobject->Lwp_Get($menu_3_url);
+				&Product_Insert($menu_3_url,$menu_3_page,$top_menu,$menu_2,$menu_3); # Transports product_url, top_menu, menu_2 and menu_3 to product_insert module for inserting tags into db (navigation example : menu_1(women) -> menu_2(women's highlights) -> menu_3(new arrivals)).
 				
-				# FILTER BLOCK - EXCLUDING FILTERS : SIZE, PRICE AND RATING
-				while($menu_3_page=~m/<h5>\s*<span[^>]*?>\s*<\/span>\s*((?!\s*size|\s*price|\s*rating)[^>]*?)\s*<\/h5>\s*([\w\W]*?)\s*<\/ul>/igs){
-					my $filter=FC($1); # Color
-					my $filter_block=$2;
+				# Filter block - excluding filters : size, price and rating.
+				while($menu_3_page =~ m/<h5>\s*<span[^>]*?>\s*<\/span>\s*((?!\s*size|\s*price|\s*rating)[^>]*?)\s*<\/h5>\s*([\w\W]*?)\s*<\/ul>/igs)
+				{
+					my $filter = $utilityobject->Trim($1); # Color
+					my $filter_block = $2;
 					
-					# EXTRACTING FILTER VALUES FROM EACH FILTER BLOCK EXCLUDING COLOUR
-					while($filter_block=~m/<input\s*type\s*[^>]*?name=\"([^>]*>?)\"\s*value\=\"([^>]*>?)\"/igs){
-						my $part_name=$1;
-						my $filter_value=FC($2); # WHITE						
-						my $filter_url=$part_filter_url.'?'.$part_name.'='.$filter_value.'&size=120&page=1'; # CONSTRUCTING FILTER URL TO EXTRACT PRODUCT URLS FROM DISPLAY PAGE (120 URL PER PAGE)						
-						my $filter_page=&get_source_page($filter_url);
-						&Product_Insert($filter_url,$filter_page,$top_menu,$menu_2,$menu_3,$filter,$filter_value); # TRANSPORTS PRODUCT_URL, TOP_MENU, MENU_2, MENU_3, FILTER_NAME AND FILTER_VALUE TO PRODUCT_INSERT MODULE FOR INSERTING TAGS INTO DB (NAVIGATION EXAMPLE : Menu_1(WOMEN) -> Menu_2(WOMEN'S HIGHLIGHTS) -> Menu_3(NEW ARRIVALS) -> (COLOR) -> (WHITE))						
+					# Extracting filter values from each filter block excluding colour.
+					while($filter_block =~ m/<input\s*type\s*[^>]*?name=\"([^>]*>?)\"\s*value\=\"([^>]*>?)\"/igs)
+					{
+						my $part_name = $1;
+						my $filter_value = $utilityobject->Trim($2); # White
+						my $filter_url = $part_filter_url.'?'.$part_name.'='.$filter_value.'&size=120&page=1'; # Constructing filter url to extract product urls from display page (120 url per page).
+						my $filter_page = $utilityobject->Lwp_Get($filter_url);
+						&Product_Insert($filter_url,$filter_page,$top_menu,$menu_2,$menu_3,$filter,$filter_value); # Transports product_url, top_menu, menu_2, menu_3, filter_name and filter_value to product_insert module for inserting tags into db (navigation example : menu_1(women) -> menu_2(women's highlights) -> menu_3(new arrivals) -> (color) -> (white)).
 						undef $filter_page;
 					}
 					
-					# EXTRACTING FILTER VALUES FOR COLOUR BLOCK
-					while($filter_block=~m/<input\s*type\=\"checkbox\"\s*value\=\"([^>]*?)\"\s*id\=\"[^>]*?\"\s*name\=\"([^>]*?)\"\s*\/>/igs){
-						my $filter_value=FC($1); # WHITE
-						my $part_name=$2;
-						my $filter_url=$part_filter_url.'?'.$part_name.'='.$filter_value.'&size=120&page=1'; # CONSTRUCTING FILTER URL TO EXTRACT PRODUCT URLS FROM DISPLAY PAGE (120 URL PER PAGE)						
-						my $filter_page=&get_source_page($filter_url);
-						&Product_Insert($filter_url,$filter_page,$top_menu,$menu_2,$menu_3,$filter,$filter_value); # TRANSPORTS PRODUCT_URL, TOP_MENU, MENU_2, MENU_3, FILTER_NAME AND FILTER_VALUE TO PRODUCT_INSERT MODULE FOR INSERTING TAGS INTO DB (NAVIGATION EXAMPLE : Menu_1(WOMEN) -> Menu_2(WOMEN'S HIGHLIGHTS) -> Menu_3(NEW ARRIVALS) -> (COLOR) -> (WHITE))						
+					# Extracting filter values for colour block.
+					while($filter_block =~ m/<input\s*type\=\"checkbox\"\s*value\=\"([^>]*?)\"\s*id\=\"[^>]*?\"\s*name\=\"([^>]*?)\"\s*\/>/igs)
+					{
+						my $filter_value = $utilityobject->Trim($1); # White.
+						my $part_name = $2;
+						my $filter_url = $part_filter_url.'?'.$part_name.'='.$filter_value.'&size=120&page=1'; # Constructing filter url to extract product urls from display page (120 url per page).
+						my $filter_page = $utilityobject->Lwp_Get($filter_url);
+						&Product_Insert($filter_url,$filter_page,$top_menu,$menu_2,$menu_3,$filter,$filter_value); # Transports product_url, top_menu, menu_2, menu_3, filter_name and filter_value to product_insert module for inserting tags into db (navigation example : mENU_1(women) -> mENU_2(women's highlights) -> mENU_3(new arrivals) -> (color) -> (white)).
 						undef $filter_page;
 					}
 				}
@@ -126,115 +133,63 @@ while($source_page=~m/dept\-((?!home\b|style|in|reward|sport)[^>]*?)\">\s*<a\s*c
 			}
 			undef $menu_2_block;
 		}
-	}
+	# }
 }
 undef $source_page;
-$dbh->commit();
-$dbh->disconnect;
-# system(`/opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl /opt/home/merit/Merit_Robots/Matalan-UK--Detail.pl  &`);
 
-#################### For Dashboard #######################################
-&DBIL::Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'STOP',$robotname);
-#################### For Dashboard #######################################
-
-###### <-- LIST ROBOT - BEGIN --> ########
-
-sub Product_Insert(){ # INSERT TAGS INTO DB
-	my $url=shift;
-	my $page=shift;
-	my $top_menu=shift;
-	my $menu_2=shift;
-	my $menu_3=shift;
-	my $filter=shift;
-	my $filter_value=shift;
+# URL collection.
+sub Product_Insert()
+{
+	my $url = shift;
+	my $page = shift;
+	my $top_menu = shift;
+	my $menu_2 = shift;
+	my $menu_3 = shift;
+	my $filter = shift;
+	my $filter_value = shift;
 	
-	##### DATA CLEANSING #####
-	$top_menu=~s/Â//igs;
-	$menu_2=~s/Â//igs;
-	$menu_3=~s/Â//igs;
-	$filter=~s/Â//igs;
-	$filter_value=~s/Â//igs;
-	##########################
-	my $page_count=1;
+	my $page_count = 1;
 	nextPage:
-	while($page=~m/<h3>\s*<a\s*class\=\"link\"\s*href\=\"([^>]*?)"[^>]*?>\s*[^>]*?\s*<\/a>/igs){
-		my $product_url=$1;
-		$product_url=$home_url.$1 if($product_url=~m/(\/s\d+)\//is); # CONSTRUCTING UNIQLE PRODUCT URL
+	# Pattern match of url from list page.
+	while($page =~ m/<h3>\s*<a\s*class\=\"link\"\s*href\=\"([^>]*?)"[^>]*?>\s*[^>]*?\s*<\/a>/igs)
+	{
+		my $product_url = $1;
+		$product_url = $home_url.$1 if($product_url =~ m/(\/s\d+)\//is); # CONSTRUCTING UNIQLE PRODUCT URL
 		my $product_object_key;
-		if($validate{$product_url} eq ''){ # CHECKING WHETHER PRODUCT URL ALREADY AVAILABLE IN THE HASH TABLE
-			$product_object_key=&DBIL::SaveProduct($product_url,$dbh,$robotname,$retailer_id,$Retailer_Random_String,$excuetionid); # GENERATING UNIQUE PRODUCT ID
-			$validate{$product_url}=$product_object_key; # STORING PRODUCT_ID INTO HASH TABLE
+		
+		# Checking whether product URL already stored in the database. If exist then existing ObjectKey is re-initialized to the URL.
+		if($totalHash{$product_url} eq '')
+		{
+			$product_object_key = $dbobject->SaveProduct($product_url,$robotname,$retailer_id,$Retailer_Random_String);			
+			$totalHash{$product_url} = $product_object_key;
 		}
-		$product_object_key=$validate{$product_url}; # USING EXISTING PRODUCT_ID IF THE HASH TABLE CONTAINS THIS URL
-		$filter_value=~s/_/ /igs;		
-		&DBIL::SaveTag('Menu_1',$top_menu,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid) if($top_menu ne '');
-		&DBIL::SaveTag('Menu_2',$menu_2,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid) if(($menu_2!~m/sale/is) && ($menu_2 ne ''));
-		&DBIL::SaveTag('Menu_2',$menu_3,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid) if($menu_2=~m/sale/is);
-		&DBIL::SaveTag('Menu_3',$menu_3,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid) if(($menu_3!~m/\ssale/is) && ($menu_3 ne ''));
-		&DBIL::SaveTag($filter,$filter_value,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid) if(($filter ne '') && ($filter_value ne ''));
-		$dbh->commit();
+		$product_object_key = $totalHash{$product_url};
+		$filter_value =~ s/_/ /igs;
+		
+		# Storing menus into database.		
+		$dbobject->SaveTag('Menu_1',$top_menu,$product_object_key,$robotname,$Retailer_Random_String) if($top_menu ne '');
+		$dbobject->SaveTag('Menu_2',$menu_2,$product_object_key,$robotname,$Retailer_Random_String) if(($menu_2 !~ m/sale/is) && ($menu_2 ne ''));
+		$dbobject->SaveTag('Menu_2',$menu_3,$product_object_key,$robotname,$Retailer_Random_String) if($menu_2 =~ m/sale/is);
+		$dbobject->SaveTag('Menu_3',$menu_3,$product_object_key,$robotname,$Retailer_Random_String) if(($menu_3 !~ m/\s+sale/is) && ($menu_3 ne ''));
+		$dbobject->SaveTag($filter,$filter_value,$product_object_key,$robotname,$Retailer_Random_String) if(($filter ne '') && ($filter_value ne ''));
+		$dbobject->commit();
 	}
-	# MATCHES NEXT PAGE IN DISPLAY PAGE AND RE-LOOP TO NEXTPAGE WITH CONSTRUCTED MENU_3 URL
-	if($page=~m/<li\s*class\=\"next\">/is){
+	
+	# Next page navigation.
+	if($page =~ m/<li\s*class\=\"next\">/is)
+	{
 		$page_count++;
-		$url=$1.$page_count if($url=~m/([^>]*?\&page\=)/is);
-		$page=&get_source_page($url);
+		$url = $1.$page_count if($url =~ m/([^>]*?\&page\=)/is);
+		$page = $utilityobject->Lwp_Get($url);
 		goto nextPage;
 	}
 }
 
-sub FC(){ # REMOVES FOREIGN CHARACTERS
-	my $text=shift;
-	$text=decode_entities($text);
-	return $text;
-}
+# End of List collection.
+$logger->send("$robotname :: Instance Completed  :: $pid\n");
 
-sub get_source_page(){ # FETCH SOURCE PAGE CONTENT FOR THE GIVEN URL
-	my $url=shift;
-	my $rerun_count=0;
-	$url=~s/^\s+|\s+$//g;
-	Repeat:
-	my $request=HTTP::Request->new(GET=>$url);
-	$request->header("Accept"=>"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"); 
-    $request->header("Content-Type"=>"application/x-www-form-urlencoded");
-	my $response=$ua->request($request);
-	$cookie->extract_cookies($response);
-	$cookie->save;
-	$cookie->add_cookie_header($request);
-	my $code=$response->code;
-	
-	######## WRITING LOG INTO /var/tmp/Retailer/$retailer_file #######
-	
-	open JJ,">>$retailer_file";
-	print JJ "$url->$code\n";
-	close JJ;
-	
-	##################################################################
-	
-	my $content;
-	if($code=~m/20/is){
-		$content=$response->content;
-		return $content;
-	}
-	elsif($code=~m/30/is){
-		my $loc=$response->header('location');                
-        $loc=decode_entities($loc);    
-        my $loc_url=url($loc,$url)->abs;        
-        $url=$loc_url;
-        goto Repeat;
-	}
-	elsif($code=~m/40/is){
-		if($rerun_count <= 3){
-			$rerun_count++;			
-			goto Repeat;
-		}
-		return 1;
-	}
-	else{
-		if($rerun_count <= 3){
-			$rerun_count++;			
-			goto Repeat;
-		}
-		return 1;
-	}
-}
+# Saving end time in dashboard.
+$dbobject->Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'STOP',$robotname);
+
+# Commit the Transaction.
+$dbobject->commit();
