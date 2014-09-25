@@ -82,6 +82,8 @@ if($content=~m/<li\s*class\=\"$ARGV[0]\">\s*([\w\W]*?)(?:<li\s*class\=\"category
 			my $menu2 = lc($1);
 			my $block2 = $2;
 			
+			next if($menu2 =~ m/Shops/is);
+			
 			while($block2 =~ m/href\s*\=\s*\"\s*([^>]*?)\s*\"\s*[^>]*?>\s*([^<]*?)\s*</igs)
 			{
 				my $purl = $1;
@@ -135,11 +137,7 @@ sub collect_product()
 	my $filter_value_1=shift;
 	my $product_collection_url=shift;
 	
-	my $menu_44=shift;
-	my $filter_header_2=shift;
-	my $filter_value_2=shift;
-	
-	print "menu: $menu_11\t$menu_22\t$menu_33\t$filter_header_1\t$filter_value_1\t$filter_header_2\t$filter_value_2\n";
+	print "menu: $menu_11\t$menu_22\t$menu_33\t$filter_header_1\t$filter_value_1\n";
 	
 	$product_collection_url=~s/\#//igs;
 	
@@ -191,25 +189,16 @@ NextPage:
 			
 			unless($menu_22=~m/^\s*$/is)
 			{
-				$dbobject->SaveTag('Menu_2',$menu_22,$product_object_key,$robotname,$Retailer_Random_String) if($menu_22 ne '');
+				$dbobject->SaveTag('Menu_2',$menu_22,$product_object_key,$robotname,$Retailer_Random_String);
 			}
 			unless($menu_33=~m/^\s*$/is)
 			{
-				$dbobject->SaveTag('Menu_3',$menu_33,$product_object_key,$robotname,$Retailer_Random_String) if($menu_33 ne '');
+				$dbobject->SaveTag('Menu_3',$menu_33,$product_object_key,$robotname,$Retailer_Random_String);
 			}
 			unless($filter_header_1=~m/^\s*$/is)
 			{
 				$dbobject->SaveTag($filter_header_1,$filter_value_1,$product_object_key,$robotname,$Retailer_Random_String) if($filter_value_1 ne '');
 			}
-			unless($menu_44=~m/^\s*$/is)
-			{
-				$dbobject->SaveTag('Menu_4',$menu_44,$product_object_key,$robotname,$Retailer_Random_String) if($menu_44 ne '');
-			}
-			unless($filter_header_2=~m/^\s*$/is)
-			{
-				$dbobject->SaveTag($filter_header_2,$filter_value_2,$product_object_key,$robotname,$Retailer_Random_String) if($filter_value_2 ne '');
-			}
-			
 			# Committing the transaction.
 			$dbobject->commit();
 		}
@@ -247,25 +236,16 @@ NextPage:
 			
 			unless($menu_22=~m/^\s*$/is)
 			{
-				$dbobject->SaveTag('Menu_2',$menu_22,$product_object_key,$robotname,$Retailer_Random_String) if($menu_22 ne '');
+				$dbobject->SaveTag('Menu_2',$menu_22,$product_object_key,$robotname,$Retailer_Random_String);
 			}
 			unless($menu_33=~m/^\s*$/is)
 			{
-				$dbobject->SaveTag('Menu_3',$menu_33,$product_object_key,$robotname,$Retailer_Random_String) if($menu_33 ne '');
+				$dbobject->SaveTag('Menu_3',$menu_33,$product_object_key,$robotname,$Retailer_Random_String);
 			}
 			unless($filter_header_1=~m/^\s*$/is)
 			{
-				$dbobject->SaveTag($filter_header_1,$filter_value_1,$product_object_key,$robotname,$Retailer_Random_String) if($filter_value_1 ne '');
+				$dbobject->SaveTag($filter_header_1,$filter_value_1,$product_object_key,$robotname,$Retailer_Random_String);
 			}
-			unless($menu_44=~m/^\s*$/is)
-			{
-				$dbobject->SaveTag('Menu_4',$menu_44,$product_object_key,$robotname,$Retailer_Random_String) if($menu_44 ne '');
-			}
-			unless($filter_header_2=~m/^\s*$/is)
-			{
-				$dbobject->SaveTag($filter_header_2,$filter_value_2,$product_object_key,$robotname,$Retailer_Random_String) if($filter_value_2 ne '');
-			}
-			
 			# Committing the transaction.
 			$dbobject->commit();
 		}
