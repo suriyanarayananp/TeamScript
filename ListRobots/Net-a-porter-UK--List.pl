@@ -250,7 +250,7 @@ while($source_page =~ m/<a\s*class\=\"top\-nav\-link[^>]*?\"\s*href\=\"[^>]*?\">
 					else
 					{
 						# Navigation: clothing -> shop by -> activewear -> activewear.						
-						while($menu_3_page =~ m/<a[^>]*?href\=\"(\/Shop[^\"]*?)\">\s*<img[^>]*?alt\=\"([^\"]*?)\"\s*\/>/igs)
+						while($menu_3_page =~ m/<a[^>]*?href\=\"([^\"]*?)\">\s*<img[^>]*?alt\=\"([^\"]*?)\"\s*\/>/igs)
 						{
 							my $category_url = $1;
 							$category_url = $home_url.$category_url unless($category_url =~ m/^http/is);
