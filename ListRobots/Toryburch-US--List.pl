@@ -73,7 +73,10 @@ if($content=~m/<li\s*class\=\"$ARGV[0]\">\s*([\w\W]*?)(?:<li\s*class\=\"category
 {
 	my $menu1 = lc($ARGV[0]);
 	my $block1 = $1;
-	$menu1 = "TORY'S MUST-HAVES" if($menu1 =~ m/musthaves/is);
+	
+	next if($menu1 =~ m/musthaves/is);
+	
+	##$menu1 = "TORY'S MUST-HAVES" if($menu1 =~ m/musthaves/is);
 	
 	if($block1 =~ m/class\=\"group\-hdr\">\s*([^>]*?)\s*<([\w\W]*?)<\/ul>/is)
 	{

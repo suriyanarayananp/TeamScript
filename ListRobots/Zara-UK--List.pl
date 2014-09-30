@@ -123,9 +123,11 @@ foreach my $regex(@regex_array)
 				
 				my $menu_2_quoted = quotemeta($menu_2);
 				
-				if($menu_2_content =~ m/<ul\s*class\s*\=\s*\"\s*current\s*\"\s*>[\w\W]*?<ul\s*class\s*\=\s*\"\s*current\s*\"\s*>([\w\W]*?)<\/ul>\s*<\/li>\s*<\/ul>/is)# Pattern match to check whether next navigate available.
+				##if($menu_2_content =~ m/<ul\s*class\s*\=\s*\"\s*current\s*\"\s*>[\w\W]*?<ul\s*class\s*\=\s*\"\s*current\s*\"\s*>([\w\W]*?)<\/ul>\s*<\/li>\s*<\/ul>/is)# Pattern match to check whether next navigate available.
+				if($menu_2_content =~ m/<ul\s*class\s*\=\s*\"\s*current\s*\"\s*>[\w\W]*?<ul\s*class\s*\=\s*\"\s*current\s*\"\s*>([\w\W]*?)<\/ul>\s*<\/li>/is)# Pattern match to check whether next navigate available.
 				{
-					if($menu_2_content =~ m/<li[^>]*?class\s*\=\s*\"\s*current\s*\"\s*>\s*\s*<a[^>]*?>\s*$menu_2_quoted\s*<[^>]*?>\s*<ul\s*class="current">([\w\W]*?)<\/ul>([\w\W]*?)<\/ul>\s*<\/li>\s*<\/ul>/is)##SubMenu2 Block
+					#if($menu_2_content =~ m/<li[^>]*?class\s*\=\s*\"\s*current\s*\"\s*>\s*\s*<a[^>]*?>\s*$menu_2_quoted\s*<[^>]*?>\s*<ul\s*class="current">([\w\W]*?)<\/ul>([\w\W]*?)<\/ul>\s*<\/li>\s*<\/ul>/is)##SubMenu2 Block
+					if($menu_2_content =~ m/<li[^>]*?class\s*\=\s*\"\s*current\s*\"\s*>\s*\s*<a[^>]*?>\s*Girl\s*\(3-14\s*years\)\s*<[^>]*?>\s*<ul\s*class="current">([\w\W]*?)<\/ul>([\w\W]*?)<\/ul>\s*<\/li>/is)##SubMenu2 Block
 					{
 						my $main_block_menu2=$1;
 						my $main_block_next=$2;
@@ -135,7 +137,7 @@ foreach my $regex(@regex_array)
 						{
 							my $menu_3=$1;
 							my $menu_3_urls_block =$2;
-							
+							print "Menu3:: ----> $menu_3\n";
 							next if($menu_3 eq "Sale"); # To skip if menu2 is sale (Redirected to SALE menu which is being taken separately).
 							
 							# Pattern match to get next submenus from the above block.
@@ -145,7 +147,7 @@ foreach my $regex(@regex_array)
 								my $menu_4=$utilityobject->Trim($2); 
 								my $menu_4=$utilityobject->Decode($menu_4); 
 								# print"menu_3 in scenario1: $menu_3\n";
-								
+								print "menu_4:: ----> $menu_4\n";
 								next if($menu_4 eq "Sale"); # To skip if menu2 is sale (Redirected to SALE menu which is being taken separately).
 								
 								&Product_Collection($menu_4_url,$menu_1,$menu_2,$menu_3,$menu_4); # Function call with menus and their url as arguments to collect product urls.
@@ -156,7 +158,7 @@ foreach my $regex(@regex_array)
 						{
 							my $Next_cat_url=$1;
 							my $menu_3=$2;
-							
+							print "menu_3:: ----> $menu_3\n";
 							&Product_Collection($Next_cat_url,$menu_1,$menu_2,$menu_3,''); # Function call with menus and their url as arguments to collect product urls.
 							
 							my $Next_cat_content = $utilityobject->Lwp_Get($Next_cat_url);
@@ -174,7 +176,7 @@ foreach my $regex(@regex_array)
 									my $menu_4_url =$1;
 									my $menu_4=$utilityobject->Trim($2); 
 									my $menu_4=$utilityobject->Decode($menu_4); 
-									# print"menu_4  in Scenario1: $menu_4\n";
+									print"menu_4  in Scenario1: $menu_4\n";
 									next if($menu_4 eq "Sale"); # To skip if menu2 is sale (Redirected to SALE menu which is being taken separately).
 									
 									&Product_Collection($menu_4_url,$menu_1,$menu_2,$menu_3,$menu_4); # Function call with menus and their url as arguments to collect product urls.
@@ -184,7 +186,7 @@ foreach my $regex(@regex_array)
 					}
 					elsif($menu_2_content =~ m/<li[^>]*?class\s*\=\s*\"\s*current\s*\"\s*>\s*\s*<a[^>]*?>\s*$menu_2_quoted\s*<[^>]*?>\s*<ul\s*class="current">([\w\W]*?)<\/ul>\s*<\/li>/is)
 					{
-						# print">>>>>>>>>>         In Scenario1 sub\n";
+						print">>>>>>>>>>         In Scenario1 sub\n";
 						my $menu_3_block=$1;
 						
 						while($menu_3_block =~ m/<a[^>]*?href\s*\=\s*\"([^>]*?)\"[^>]*?>\s*([^>]*?)</igs)##SubMenu2 Block
@@ -192,7 +194,7 @@ foreach my $regex(@regex_array)
 							my $menu_3_url=$1;	
 							my $menu_3=$2;	
 							
-							# print">>>>>>>sub menu_3 $menu_3\n";
+							print">>>>>>>sub menu_3 $menu_3\n";
 							next if($menu_3 eq "Sale"); # To skip if menu2 is sale (Redirected to SALE menu which is being taken separately).
 							
 							&Product_Collection($menu_3_url,$menu_1,$menu_2,$menu_3,'');
@@ -230,7 +232,7 @@ foreach my $regex(@regex_array)
 							my $menu_3_url =$1;
 							my $menu_3=$utilityobject->Trim($2); 
 							my $menu_3=$utilityobject->Decode($menu_3); 
-							# print"menu_3 in scenario2 : $menu_3\n";
+							print"menu_3 in scenario2 : $menu_3\n";
 							
 							next if($menu_3=~m/Sale/is); # To skip if menu2 is sale (Redirected to SALE menu which is being taken separately).
 							
@@ -243,14 +245,14 @@ foreach my $regex(@regex_array)
 							if($main_list_content=~m/>\s*$menu_3\s*(?:\s*<[^>]*?>\s*)*\s*<ul class="current">([\w\W]*?)<\/ul>/is)
 							{
 								my $menu_4_block=$1;
-								# print"menu_4 in scenario2 : $menu_4\n";
+								print"menu_4 in scenario2 : $menu_4\n";
 								
 								# Pattern match to get next submenus from the above block.
 								while($menu_4_block=~m/<\s*a\s*href=\"([^<]*?)"\s*>\s*(?!\s*View\s*All)([^<]*?)\s*<\s*\/a\s*>/igs)
 								{
 									my $menu_4_url=$1;
 									my $menu_4=$2;
-									# print "in menu 4 $menu_4\n";
+									print "in menu 4 $menu_4\n";
 									next if($menu_4=~m/Sale/is); # To skip if menu2 is sale (Redirected to SALE menu which is being taken separately).
 									
 									&Product_Collection($menu_4_url,$menu_1,$menu_2,$menu_3,$menu_4); # Function call with menus and their url as arguments to collect product urls.
@@ -275,7 +277,7 @@ sub Product_Collection
 	
 	my $cat_id=$1 if($category_url=~m/\-?\s*c\s*(\d+)\s*\.\s*html/is);
 	print "in $category_url\t\n$menu1\t$menu2\t$menu3\t$menu4\n";
-	
+	print "Collecting products.................................................!\n";
 	my $Product_list_content = $utilityobject->Lwp_Get($category_url);
 	
 	my $char_url='http://www.zara.com/webapp/wcs/stores/servlet/CategoryFilterJSON?categoryId='.$cat_id.'&langId=-1&storeId=10706&filterCode=STATIC&ajaxCall=true';
