@@ -99,6 +99,24 @@ foreach my $regex(@regex_array)
 				&func($menu_2_blk,$menu_11,'');  # Passing menu2 block ,their menus as arguments to process further.
 			}
 		}
+		elsif(($menu_11=~m/$robo_menu/is)&&($robo_menu=~m/girl/is))
+		{
+			# Pattern match to get the block under the menu1 is "sale".
+			if ( $main_page_content =~ m/<ul\s*class\s*\=\s*\"\s*column_1\s*\"\s*>\s*<li\s*class\s*\=\s*\"\s*category_1871496\s*"\s*>([\w\W]*?)<\/ul>\s*<\/div>/is)
+			{
+				$menu_2_blk=$1;   # Menu2 Block.
+				&func($menu_2_blk,$menu_11,'');  # Passing menu2 block ,their menus as arguments to process further.
+			}
+		}
+		elsif(($menu_11=~m/$robo_menu/is)&&($robo_menu=~m/boy/is))
+		{
+			# Pattern match to get the block under the menu1 is "sale".
+			if ( $main_page_content =~ m/<ul\s*class\s*\=\s*\"\s*column_1\s*\"\s*>\s*<li\s*class\s*\=\s*\"\s*category_1885492\s*"\s*>([\w\W]*?)<\/ul>\s*<\/div>/is)
+			{
+				$menu_2_blk=$1;   # Menu2 Block.
+				&func($menu_2_blk,$menu_11,'');  # Passing menu2 block ,their menus as arguments to process further.
+			}
+		}
 		else
 		{
 			print "$menu_11 == $robo_menu\n";

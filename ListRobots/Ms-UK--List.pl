@@ -298,6 +298,8 @@ sub db_insert()
 	print "$menu1, $menu2, $menu3, $menu4, $menu5, $menu6, $filter, $filtervalue\n";
 	my $product_object_key;
 	
+	$product_url = 'http://marksandspencer.com'.$product_url unless($product_url =~ m/^http/igs);
+	
 	if($validate{$product_url} eq '')
 	{ # CHECKING WHETHER PRODUCT URL ALREADY AVAILABLE IN THE HASH TABLE
 		$product_object_key=&DBIL::SaveProduct($product_url,$dbh,$robotname,$retailer_id,$Retailer_Random_String,$excuetionid); # GENERATING UNIQUE PRODUCT ID
@@ -352,6 +354,8 @@ sub db_insert_multi_item()
 	{
 		my $product_url1=$1;
 		$product_url1=&clean($product_url1);
+		
+		$product_url1 = 'http://marksandspencer.com'.$product_url1 unless($product_url1 =~ m/^http/igs);
 		
 		if($validate{$product_url1} eq '')
 		{ # CHECKING WHETHER PRODUCT URL ALREADY AVAILABLE IN THE HASH TABLE

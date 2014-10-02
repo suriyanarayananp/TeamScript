@@ -70,7 +70,8 @@ my $content = $utilityobject->Lwp_Get($url);
 my $menu1 = $ARGV[0];
 ############ URL Collection ##############
 # Pattern match to take Top menu & it's block.
-if($content=~m/class\=nav\-flyout-heading>(\s*<a\s*href\=[^>]*?>\s*$ARGV[1]\s*[\w\W]*?)<\/a>\s*<\/div>\s*<\/div>/is)
+#if($content=~m/class\=nav\-flyout-heading>(\s*<a\s*href\=[^>]*?>\s*$ARGV[1]\s*[\w\W]*?)<\/a>\s*<\/div>\s*<\/div>/is)
+if($content=~m/class\=nav\-flyout-heading>(\s*<a[^>]*?href\=[^>]*?>\s*$ARGV[1]\s*[\w\W]*?)<\/a>\s*<\/div>\s*<\/div>/is)
 {
 	print "I am here\n";
 	my $block1 = $1;

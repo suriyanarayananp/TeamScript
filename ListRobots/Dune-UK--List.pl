@@ -69,7 +69,7 @@ $logger->send("$robotname :: Instance Started :: $pid\n");
 my $home_url = 'http://www.dunelondon.com/';
 my $source_page = $utilityobject->Lwp_Get($home_url);
 
-while($source_page =~ m/<a\s*id\=\"[^\"]*?\"\s*href\=\"[^\"]*?\">\s*((?!Brands|New)[^<]*?)\s*<([\w\W]*?)<\/ul>/igs)
+while($source_page =~ m/<a\s*id\=\"[^\"]*?\"\s*href\=\"[^\"]*?\">\s*((?!Brands|New|Sale)[^<]*?)\s*<([\w\W]*?)<\/ul>/igs)
 {
 	my $top_menu = $utilityobject->Trim($1);
 	my $top_menu_block = $2;	
@@ -99,7 +99,7 @@ while($source_page =~ m/<a\s*id\=\"[^\"]*?\"\s*href\=\"[^\"]*?\">\s*((?!Brands|N
 	}
 }
 
-while($source_page =~ m/<a\s*id\=\"[^\"]*?\"\s*href\=\"[^\"]*?\">\s*(New[^<]*?)\s*<([\w\W]*?)<\/ul>/igs)
+while($source_page =~ m/<a\s*id\=\"[^\"]*?\"\s*href\=\"[^\"]*?\">\s*((?:New|Sale)[^<]*?)\s*<([\w\W]*?)<\/ul>/igs)
 {
 	my $top_menu = $utilityobject->Trim($1);
 	my $top_menu_block = $2;	
@@ -112,6 +112,7 @@ while($source_page =~ m/<a\s*id\=\"[^\"]*?\"\s*href\=\"[^\"]*?\">\s*(New[^<]*?)\
 		
 		$category_id = $1 if($category_id =~ m/_(\d+)$/is);		
 		$menu_2_url = 'http://www.dunelondon.com/page/ajx_facet/?searchbycat=NEW_'.$category_id.'&productsperpage=1000';
+		$menu_2_url = 'http://www.dunelondon.com/page/ajx_facet/?searchbycat=SALE_'.$category_id.'&productsperpage=1000' if($top_menu =~ m/^sale/is);
 		$menu_2_url = 'http://www.dunelondon.com/page/ajx_facet/?searchbycat=SOON&productsperpage=1000' if($menu_2 =~ m/^coming/is);
 
 		my $menu_2_page = $utilityobject->Lwp_Get($menu_2_url);
@@ -122,6 +123,7 @@ while($source_page =~ m/<a\s*id\=\"[^\"]*?\"\s*href\=\"[^\"]*?\">\s*(New[^<]*?)\
 			my $filter_value = $1;
 			my $filter_url;
 			$filter_url = 'http://www.dunelondon.com/page/ajx_facet/?searchbycat=NEW_'.$category_id.'&productsperpage=1000&filter_colour=,'.$filter_value.',';
+			$filter_url = 'http://www.dunelondon.com/page/ajx_facet/?searchbycat=SALE_'.$category_id.'&productsperpage=1000&filter_colour=,'.$filter_value.',' if($top_menu =~ m/^sale/is);
 			$filter_url = 'http://www.dunelondon.com/page/ajx_facet/?searchbycat=SOON&productsperpage=1000&filter_colour=,'.$filter_value.',' if($menu_2 =~ m/^coming/is);
 			
 			my $filter_page = $utilityobject->Lwp_Get($filter_url);
