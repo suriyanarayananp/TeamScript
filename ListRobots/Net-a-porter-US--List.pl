@@ -430,13 +430,18 @@ sub Product_Insert()
 		my $product_url = $home_url.$1;
 		my $product_object_key;
 		
+		my $product = $1 if($product_url =~ m/\/(\d+)$/is);
+		
 		# Checking whether product URL already stored in the database. If exist then existing ObjectKey is re-initialized to the URL.
-		if($totalHash{$product_url} eq '')
+		if($totalHash{$product} eq '')
 		{			
 			$product_object_key = $dbobject->SaveProduct($product_url,$robotname,$retailer_id,$Retailer_Random_String);
-			$totalHash{$product_url} = $product_object_key;
+			$totalHash{$product} = $product_object_key;
 		}
-		$product_object_key = $totalHash{$product_url}; # Using existing product_id if the hash table contains this url.
+		else
+		{
+			$product_object_key = $totalHash{$product}; # Using existing product_id if the hash table contains this url.
+		}
 		
 		# Storing menus into database.
 		$dbobject->SaveTag('Menu_1',$top_menu,$product_object_key,$robotname,$Retailer_Random_String) if($top_menu ne '');
