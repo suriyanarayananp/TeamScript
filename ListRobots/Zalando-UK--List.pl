@@ -63,11 +63,11 @@ my $content = &lwp_get("http://www.zalando.co.uk/");
 my $menu1 = $ARGV[1];
 my $menu2 = $ARGV[2];
 my $menu3 = $ARGV[3];
-if($content =~ m/class\=\"parentCat\">\s*<span\s*class\=\"isActive\s*iconSprite\">\s*([^>]*?)\s*<([\w\W]*?)<\/li>\s*<\/ul>\s*<\/li>/is)
+if($content =~ m/class\=\"parentCat\">\s*<span\s*class\=\"isActive\s*[^>]*?>\s*(?:<b>\s*<\/b>)?\s*([^>]*?)\s*<([\w\W]*?)<\/li>\s*<\/ul>\s*<\/li>/is)
 {
 	my $menu3  = &clean($1);
 	my $cont2_sub = $2;
-	while($cont2_sub =~ m/href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*</igs)
+	while($cont2_sub =~ m/href\=\"([^>]*?)\"[^>]*?>\s*(?:<b>\s*<\/b>\s*)?([^>]*?)\s*</igs)
 	{
 		my $catlink3 = $1;
 		my $menu4 = &clean($2); #Menu3 -> Bra
@@ -84,7 +84,7 @@ if($content =~ m/class\=\"parentCat\">\s*<span\s*class\=\"isActive\s*iconSprite\
 			{
 				my $catlink4 = $1;
 				my $menu5 = &clean($2); #Menu5 -> Balcontee Bar
-				# print "Menu5 => $menu5\n";
+				print "Menu5 => $menu5\n";
 				# next if($menu5 !~ m/Down\s*Coats/is);
 				$catlink4 = "http://www.zalando.co.uk/".$catlink4 unless($catlink4 =~ m/^http/is);
 				my $cont4 = lwp_get($catlink4); 
@@ -154,6 +154,22 @@ if($content =~ m/class\=\"parentCat\">\s*<span\s*class\=\"isActive\s*iconSprite\
 					&collect_product($menu1,$menu2,$menu3,$menu4,'',$menu6,$menu7,$cont6);
 				}
 			}
+			while($subcontent =~ m/class\=\"fLabel\"\s*[^>]*?>\s*([^>]*?)\s*<\/span>([\w\W]*?)value\=\"(?:close|Apply)\"[^>]*?>\s*(?:<\/form>\s*)?<\/div>\s*<\/div>/igs)
+			{
+				my $menu4 = &clean($1);
+				my $cont5 = $2;
+				next if($menu4 =~ m/Category|More\s*categories|Size|Price|You\s*might\s*also\s*like\s*|Free\s*Delivery|Brand/is);
+				# next unless($menu4 =~ m/colour/is);
+				print "Menu => $menu1 -> $menu2 -> $menu3 -> $menu4 ->\n";
+				while($cont5 =~ m/href\=\"([^>]*?)\"[^>]*?title\=\"([^>]*?)\">|href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<|value\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*</igs)
+				{
+					my $catlink5 = $1.$3.$5;
+					my $menu5 = &clean($2.$4.$6);
+					$catlink5 = "http://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
+					my $cont6 = &lwp_get($catlink5); 
+					&collect_product($menu1,$menu2,$menu3,'','',$menu4,$menu5,$cont6);
+				}
+			}
 			while($subcontent =~ m/<span\s*class\=\"left\">\s*((?!Brand|Size|Price)[^>]*?)\s*<([\w\W]*?)<\/div>\s*<\/div>/igs)
 			{
 				my $menu6 = &clean($1);
@@ -180,6 +196,24 @@ if($content =~ m/class\=\"parentCat\">\s*<span\s*class\=\"isActive\s*iconSprite\
 }
 else
 {
+	print  "Else Part No Sub Menu\n";
+	while($content =~ m/class\=\"fLabel\"\s*[^>]*?>\s*([^>]*?)\s*<\/span>([\w\W]*?)value\=\"(?:close|Apply)\"[^>]*?>\s*(?:<\/form>\s*)?<\/div>\s*<\/div>/igs)
+	{
+		my $menu4 = &clean($1);
+		my $cont5 = $2;
+		next if($menu4 =~ m/Category|More\s*categories|Size|Price|You\s*might\s*also\s*like\s*|Free\s*Delivery|Brand/is);
+		# next unless($menu4 =~ m/colour/is);
+		
+		while($cont5 =~ m/href\=\"([^>]*?)\"[^>]*?title\=\"([^>]*?)\">|href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<|value\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*</igs)
+		{
+			my $catlink5 = $1.$3.$5;
+			my $menu5 = &clean($2.$4.$6);
+			$catlink5 = "http://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
+			my $cont6 = &lwp_get($catlink5); 
+			print "Menu => $menu1 -> $menu2 -> $menu3 ->$menu4 -> $menu5\n";
+			&collect_product($menu1,$menu2,$menu3,'','',$menu4,$menu5,$cont6);
+		}
+	}			
 	while($content =~ m/<div\s*class\=\"filter\">\s*<div\s*class\=\"title\">\s*<label>\s*([^>]*?)\s*<\/label>\s*<\/div>([\w\W]*?)<\/div>/igs)
 	{
 		my $menu6 = &clean($1);
