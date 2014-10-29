@@ -63,6 +63,9 @@ $logger->send("$robotname :: Instance Started :: $pid\n");
 my $url='http://www.office.co.uk/';
 my $content = $utilityobject->Lwp_Get($url);
 
+# open(fh,">menus.txt");
+# close fh;
+
 # Extraction of the Menu1 URL, Menu1 Name, Menu1 block
 while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[^>]*?>)?([^>]*?)\s*(?:<\/span>)?\s*<\/a>(?:\s*<div>([\W\w]*?)<\/ul><\/div>\s*<\/li>)/igs)
 {
@@ -71,7 +74,7 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 	my $Menu1_block=$3;
 	
 	# Skipping the Menu1
-	next if($Menu1=~m/Trainers|BRAND|Blog|Sale/is);
+	next if($Menu1=~m/Trainers|BRANDS|Blog|Sale/is);
 	
 	# Skipping the Menu1 # testing
 	#next if($Menu1=~m/Trainers|BRAND|Blog|Sale|HIS|KIDS/is);
@@ -87,7 +90,7 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 	{
 		my $menu2=$utilityobject->Decode($1);
 		my $menu2_block=$2;
-		print "menu2 :: $menu2\n";
+		print "Menus :: $Menu1 :: $menu2\n";
 		
 		# Skipping the Brand section to avoid unwanted rotation without any new data
 		next if($menu2=~m/BRAND/is);
@@ -96,12 +99,16 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 		###while($menu2_block=~m/<li\s*class\=\"grandchild([^>]*?)\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[^>]*?>)?([^>]*?)(?:<\/strong>)?\s*<\/a>\s*<\/li>/igs)
 		while($menu2_block=~m/<li\s*class\=\"grandchild([^>]*?)\">\s*(?:<strong>)?\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[^>]*?>)?([^>]*?)(<\/strong>)?\s*<\/a>\s*(?:<\/strong>)?<\/li>/igs)
 		{
-			my $check_value=$1.$4;
+			my $check_value=$1;
 			my $menu3_URL=$2;
 			my $menu3=$3;
+			my $tag=$4;
+			
 			$check_value=~s/\s+//igs;
 			$menu3=~s/\&pound\;/£/igs;
-				
+			
+			print "Menus :: $Menu1 :: $menu2 :: $menu3\n";
+			
 			# Skipping the Menu if View all
 			#next if (($check_value!~m/^\s*$/is) && ($menu3=~m/View\s*All/is));
 			next if($menu3=~m/View\s*All|all\s*brand/is);					
@@ -114,13 +121,15 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 			next if($menu3 eq '');
 			
 			# If the check flag value is available, then it is Header
-			if($check_value!~m/^\s*$/is)
+			if(($check_value!~m/^\s*$/is)&&($tag=~m/<\/strong>/is))
 			{
 				$menu3_header=$menu3;
 				$menu3='';
 				print "menu3 header after assigned :: $menu3_header\n";
-				##next;
+				next;
 			}
+								
+			print "Menus :: $Menu1 :: $menu2 :: $menu3\n";
 			
 			# Framing the URL
 			unless($menu3_URL=~m/^\s*http\:/is)
@@ -160,6 +169,14 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 			while($page_content=~m/<div\s*class\=\"productList_item\">\s*<div[^>]*?>\s*<a\s*class\=\"displayBlock\s*brand\"\s*href\=\"([^>]*?)\">/igs)
 			{
 				my $product_url='http://www.office.co.uk'.$1;
+				$product_url=~s/\?[^>]*?$//igs;
+				# if($product_url=~m/1253086125/is)
+				# {
+					# print "Menus :: $Menu1 :: $menu2 :: $menu3_header :: $menu3\n";	
+					# open(fh,">>menus.txt");
+					# print fh "$Menu1 \t $menu2 \t $menu3_header \t $menu3 \n";
+					# close fh;
+				# }
 				
 				# To insert product URL into table on checking the product is not available already
 				my $product_object_key = $dbobject->SaveProduct($product_url,$robotname,$retailer_id,$Retailer_Random_String);
@@ -201,10 +218,13 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 				# Skipping the Shop by filter
 				next if($filter_header=~m/Shop\s*by|Size|price/is);
 				
-				while($filter_block=~m/<a\s*href\=\"([^>]*?)\"\s*[^>]*?>\s*<span\s*class\=\"facetNameVal\">([^>]*?)<\/span>\s*<span\s*class\=\"facetVal\">[^>]*?<\/span>\s*<\/a>/igs)
+				##while($filter_block=~m/<a\s*href\=\"([^>]*?)\"\s*[^>]*?>\s*<span\s*class\=\"facetNameVal\">([^>]*?)<\/span>\s*<span\s*class\=\"facetVal\">[^>]*?<\/span>\s*<\/a>/igs)
+				if($filter_block=~m/<a\s*href\=\"([^>]*?)\"\s*[^>]*?checked_facet\s*\">\s*<span\s*class\=\"facetNameVal[^>]*?\">([^>]*?)<\/span>\s*<span\s*class\=\"facetVal\">[^>]*?<\/span>\s*<\/a>/is)
 				{
 					my $filter_url=$1;
 					my $filter_name=$2;
+					
+					print "Menus :: $Menu1 :: $menu2 :: $menu3 :: $filter_header :: $filter_name\n";
 					
 					# Framing the URL
 					unless($filter_url=~m/^\s*http\:/is)
@@ -224,7 +244,7 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 					while($page_content=~m/<div\s*class\=\"productList_item\">\s*<div[^>]*?>\s*<a\s*class\=\"displayBlock\s*brand\"\s*href\=\"([^>]*?)\">/igs)
 					{
 						my $product_url='http://www.office.co.uk'.$1;
-						
+						$product_url=~s/\?[^>]*?$//igs;
 						# To insert product URL into table on checking the product is not available already
 						my $product_object_key = $dbobject->SaveProduct($product_url,$robotname,$retailer_id,$Retailer_Random_String);
 						
@@ -254,6 +274,64 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 						goto pagination1;
 					}
 				}
+				else
+				{
+					while($filter_block=~m/<a\s*href\=\"([^>]*?)\"\s*[^>]*?>\s*<span\s*class\=\"facetNameVal[^>]*?\">([^>]*?)<\/span>\s*<span\s*class\=\"facetVal\">[^>]*?<\/span>\s*<\/a>/igs)
+					{
+						my $filter_url=$1;
+						my $filter_name=$2;
+						
+						print "Menus :: $Menu1 :: $menu2 :: $menu3 :: $filter_header :: $filter_name\n";
+						
+						# Framing the URL
+						unless($filter_url=~m/^\s*http\:/is)
+						{
+							$filter_url=$domain_url.$filter_url;
+						}
+						
+						print "Filter URL:: $filter_url\n";
+						$next_page=$filter_url;
+						
+						# Filter page navigation
+						pagination2:
+						# Fetching the URL content
+						my $page_content =$utilityobject->Lwp_Get($next_page);
+						
+						# Product collection
+						while($page_content=~m/<div\s*class\=\"productList_item\">\s*<div[^>]*?>\s*<a\s*class\=\"displayBlock\s*brand\"\s*href\=\"([^>]*?)\">/igs)
+						{
+							my $product_url='http://www.office.co.uk'.$1;
+							$product_url=~s/\?[^>]*?$//igs;
+							# To insert product URL into table on checking the product is not available already
+							my $product_object_key = $dbobject->SaveProduct($product_url,$robotname,$retailer_id,$Retailer_Random_String);
+							
+							# Saving the tag information.
+							$dbobject->SaveTag('Menu_1',$Menu1,$product_object_key,$robotname,$Retailer_Random_String) if($Menu1!~m/^\s*$/is);
+							$dbobject->SaveTag('Menu_2',$menu2,$product_object_key,$robotname,$Retailer_Random_String) if($menu2!~m/^\s*$/is);
+							$dbobject->SaveTag('Menu_3',$menu3_header,$product_object_key,$robotname,$Retailer_Random_String) if($menu3_header ne '');
+							$dbobject->SaveTag('Menu_3',$menu3,$product_object_key,$robotname,$Retailer_Random_String) if(($menu3!~m/^\s*$/is) && ($menu3_header=~m/^\s*$/is));
+							$dbobject->SaveTag('Menu_4',$menu3,$product_object_key,$robotname,$Retailer_Random_String) if(($menu3!~m/^\s*$/is) && ($menu3_header!~m/^\s*$/is));
+							$dbobject->SaveTag($filter_header,$filter_name,$product_object_key,$robotname,$Retailer_Random_String) if($filter_name!~m/^\s*$/is);
+							
+							# Committing the transaction.
+							$dbobject->commit();				
+						}
+						
+						# Page navigation
+						if($page_content=~m/<a\s*href\=\"([^>]*?)\"\s*class\=\"pagination_[^>]*?\">\s*Next\s*<\/a>/is)
+						{
+							$next_page=$domain_url.$1;
+							
+							# Framing the URL
+							unless($next_page=~m/^\s*http\:/is)
+							{
+								$next_page=$domain_url.$next_page;
+							}
+							print "pagination1:: $next_page\n";
+							goto pagination2;
+						}
+					}
+				}	
 			}
 		}
 	}	

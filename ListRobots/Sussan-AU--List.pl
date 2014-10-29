@@ -111,7 +111,23 @@ while($content=~m/<li\s*class\=\"level0[^>]*?ID\=\"([^>]*?)\">([\w\W]*?)<\/ul>/i
 		my $page_size;
 		my $next_url;
 		my $detail_cont;
-		
+				
+		# Extracting the Product URL
+		while($final_cont=~m/<li\s*class\=\"item\">\s*<a\s*href\=\"\s*([^>]*?)\s*\"\s*title\=/igs)
+		{
+			my $last_cont_url=$1;
+			
+			# To insert product URL into table on checking the product is not available already
+			my $product_object_key = $dbobject->SaveProduct($last_cont_url,$robotname,$retailer_id,$Retailer_Random_String) if($last_cont_url!~m/^\s*$/is);
+			
+			# Saving the tag information
+			$dbobject->SaveTag('Menu_1',$menu1,$product_object_key,$robotname,$Retailer_Random_String) if($menu1 ne '');
+			$dbobject->SaveTag('Menu_2',$menu2,$product_object_key,$robotname,$Retailer_Random_String) if($menu2 ne '');
+			
+			# Committing the transaction.
+			$dbobject->commit();
+		}
+				
 		# Collecting the Next page URL
 		my $final_cont_new=$final_cont;
 		pager0:
@@ -121,6 +137,8 @@ while($content=~m/<li\s*class\=\"level0[^>]*?ID\=\"([^>]*?)\">([\w\W]*?)<\/ul>/i
 			
 			# applying the URI escape
 			$next_url=uri_unescape($next_url);
+			
+			$next_url=~s/\#/?/is;
 			
 			$final_cont_new=$utilityobject->Lwp_Get($next_url);
 			$detail_cont=$final_cont_new;
@@ -207,7 +225,25 @@ while($content=~m/<li\s*class\=\"level0[^>]*?ID\=\"([^>]*?)\">([\w\W]*?)<\/ul>/i
 							
 							# Extraction of the Menu 3 URL content
 							my $final_cont_new=$utilityobject->Lwp_Get($menu3_url);
-
+							
+							# Extraction of Product URLs
+							while($final_cont_new=~m/<li\s*class\=\"item\">\s*<a\s*href\=\"\s*([^>]*?)\s*\"\s*title\=/igs)
+							{
+								my $last_cont_url=$1;
+								
+								# To insert product URL into table on checking the product is not available already
+								my $product_object_key = $dbobject->SaveProduct($last_cont_url,$robotname,$retailer_id,$Retailer_Random_String) if($last_cont_url!~m/^\s*$/is);
+								
+								# Saving the tag information.
+								$dbobject->SaveTag('Menu_1',$menu1,$product_object_key,$robotname,$Retailer_Random_String) if($menu1 ne '');
+								$dbobject->SaveTag('Menu_2',$menu2,$product_object_key,$robotname,$Retailer_Random_String) if($menu2 ne '');
+								$dbobject->SaveTag('Menu_3',$sale_filter,$product_object_key,$robotname,$Retailer_Random_String) if($sale_filter ne '');
+								$dbobject->SaveTag($menu_3_header,$menu_3,$product_object_key,$robotname,$Retailer_Random_String) if($menu_3 ne '');
+								
+								# Committing the transaction.
+								$dbobject->commit();
+							}
+							
 							# Collection of next page URL 
 							pager1:
 							if($final_cont_new=~m/<button\s*onclick\=\"[^>]*?setNavigationUrl\(\'([^>]*?)\'\,\s*true\)\;\"\s*>\s*<span>\s*Show\s*more\s*products\s*<\/span>\s*<\/button>/is)
@@ -217,6 +253,8 @@ while($content=~m/<li\s*class\=\"level0[^>]*?ID\=\"([^>]*?)\">([\w\W]*?)<\/ul>/i
 								# Applying the URI_Escape function
 								$next_url=uri_unescape($next_url);
 
+								$next_url=~s/\#/?/is;
+								
 								$final_cont_new=$utilityobject->Lwp_Get($next_url);
 								$detail_cont=$final_cont_new;
 								
@@ -269,12 +307,29 @@ while($content=~m/<li\s*class\=\"level0[^>]*?ID\=\"([^>]*?)\">([\w\W]*?)<\/ul>/i
 						pager2:
 						my $final_cont_new;
 						
+						# Extraction of Product URLs
+						while($final_cont=~m/<li\s*class\=\"item\">\s*<a\s*href\=\"\s*([^>]*?)\s*\"\s*title\=/igs)
+						{
+							my $last_cont_url=$1;
+
+							# To insert product URL into table on checking the product is not available already
+							my $product_object_key = $dbobject->SaveProduct($last_cont_url,$robotname,$retailer_id,$Retailer_Random_String) if($last_cont_url!~m/^\s*$/is);
+							
+							# Saving the tag information.
+							$dbobject->SaveTag('Menu_1',$menu1,$product_object_key,$robotname,$Retailer_Random_String) if($menu1 ne '');
+							$dbobject->SaveTag('Menu_2',$menu2,$product_object_key,$robotname,$Retailer_Random_String) if($menu2 ne '');
+							$dbobject->SaveTag('Menu_3',$sale_filter,$product_object_key,$robotname,$Retailer_Random_String) if($sale_filter ne '');
+							
+							# Committing the transaction
+							$dbobject->commit();
+						}
+						
 						# Extracting the Next page URL
 						if($final_cont=~m/<button\s*onclick\=\"[^>]*?setNavigationUrl\(\'([^>]*?)\'\,\s*true\)\;\"\s*>\s*<span>\s*Show\s*more\s*products\s*<\/span>\s*<\/button>/is)
 						{
 							my $next_url=$1;
 							$next_url=uri_unescape($next_url);
-							
+							$next_url=~s/\#/?/is;
 							# Extraction of Page source from the URL
 							$final_cont_new=$utilityobject->Lwp_Get($next_url);
 							$detail_cont=$final_cont_new;
@@ -350,6 +405,25 @@ while($content=~m/<li\s*class\=\"level0[^>]*?ID\=\"([^>]*?)\">([\w\W]*?)<\/ul>/i
 						# Menu 3 URL content extraction
 						my $final_cont_new=$utilityobject->Lwp_Get($menu3_url);
 						
+						
+						# Collection of Product URL
+						while($final_cont_new=~m/<li\s*class\=\"item\">\s*<a\s*href\=\"\s*([^>]*?)\s*\"\s*title\=/igs)
+						{
+							my $last_cont_url=$1;
+							
+							# To insert product URL into table on checking the product is not available already 
+							my $product_object_key = $dbobject->SaveProduct($last_cont_url,$robotname,$retailer_id,$Retailer_Random_String) if($last_cont_url!~m/^\s*$/is);
+							
+							# Saving the tag information.
+							$dbobject->SaveTag('Menu_1',$menu1,$product_object_key,$robotname,$Retailer_Random_String) if($menu1 ne '');
+							$dbobject->SaveTag('Menu_2',$menu2,$product_object_key,$robotname,$Retailer_Random_String) if($menu2 ne '');
+							$dbobject->SaveTag($menu_3_header,$menu_3,$product_object_key,$robotname,$Retailer_Random_String) if($menu_3 ne '');
+							
+							# Committing the transaction.
+							$dbobject->commit();
+						}
+						
+						
 						# Next Page URL navigation
 						pager3:
 						if($final_cont_new=~m/<button\s*onclick\=\"[^>]*?setNavigationUrl\(\'([^>]*?)\'\,\s*true\)\;\"\s*>\s*<span>\s*Show\s*more\s*products\s*<\/span>\s*<\/button>/is)
@@ -358,6 +432,8 @@ while($content=~m/<li\s*class\=\"level0[^>]*?ID\=\"([^>]*?)\">([\w\W]*?)<\/ul>/i
 							
 							# URI Escape funtion applied on the next page URL
 							$next_url=uri_unescape($next_url);
+							
+							$next_url=~s/\#/?/is;
 							
 							# Extraction of the Source from the Next page URL
 							$final_cont_new=$utilityobject->Lwp_Get($next_url);
@@ -412,6 +488,23 @@ while($content=~m/<li\s*class\=\"level0[^>]*?ID\=\"([^>]*?)\">([\w\W]*?)<\/ul>/i
 					my $final_cont_new=$final_cont;
 					# Label point
 					
+					# Extraction of product URL
+					while($final_cont_new=~m/<li\s*class\=\"item\">\s*<a\s*href\=\"\s*([^>]*?)\s*\"\s*title\=/igs)
+					{
+						my $last_cont_url=$1;
+						
+						# To insert product URL into table on checking the product is not available already  
+						my $product_object_key = $dbobject->SaveProduct($last_cont_url,$robotname,$retailer_id,$Retailer_Random_String) if($last_cont_url!~m/^\s*$/is);
+						
+						# Saving the tag information.
+						$dbobject->SaveTag('Menu_1',$menu1,$product_object_key,$robotname,$Retailer_Random_String) if($menu1 ne '');
+						$dbobject->SaveTag('Menu_2',$menu2,$product_object_key,$robotname,$Retailer_Random_String) if($menu2 ne '');
+						
+						# Saving the tag information.
+						$dbobject->commit();
+					}
+					
+					
 					# Navigating to the next page URL
 					pager4:					
 					if($final_cont_new=~m/<button\s*onclick\=\"[^>]*?setNavigationUrl\(\'([^>]*?)\'\,\s*true\)\;\"\s*>\s*<span>\s*Show\s*more\s*products\s*<\/span>\s*<\/button>/is)
@@ -420,7 +513,9 @@ while($content=~m/<li\s*class\=\"level0[^>]*?ID\=\"([^>]*?)\">([\w\W]*?)<\/ul>/i
 						
 						# Applying thi URI Escape function
 						$next_url=uri_unescape($next_url);
-												
+						
+						$next_url=~s/\#/?/is;	
+						
 						$final_cont_new=$utilityobject->Lwp_Get($next_url);
 						$detail_cont=$final_cont_new;
 						

@@ -74,7 +74,7 @@ if($content=~m/<li\s*class\=\"$ARGV[0]\">\s*([\w\W]*?)(?:<li\s*class\=\"category
 	my $menu1 = lc($ARGV[0]);
 	my $block1 = $1;
 	
-	next if($menu1 =~ m/musthaves/is);
+	next if($menu1 =~ m/musthaves|beauty|home|Tory\s*daily/is);
 	
 	##$menu1 = "TORY'S MUST-HAVES" if($menu1 =~ m/musthaves/is);
 	
@@ -123,11 +123,20 @@ if($content=~m/<li\s*class\=\"$ARGV[0]\">\s*([\w\W]*?)(?:<li\s*class\=\"category
 	}
 }
 
-$logger->send("$robotname :: Instance Completed  :: $pid\n");
-################### For Dashboard #######################################
+# Sending retailer completion information to dashboard
 $dbobject->Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'STOP',$robotname);
-################### For Dashboard #######################################
+
+# Sending instance completion information to logger
+$logger->send("$robotname :: Instance Completed  :: $pid\n");
+
+# Committing all the transaction.
 $dbobject->commit();
+
+# Disconnecting all DB objects
+$dbobject->disconnect();
+	
+#Destroy all DB object
+$dbobject->Destroy();
 
 
 # Function definition to get product urls.
