@@ -63,7 +63,29 @@ my $content = &lwp_get("http://www.zalando.co.uk/");
 my $menu1 = $ARGV[1];
 my $menu2 = $ARGV[2];
 my $menu3 = $ARGV[3];
-if($content =~ m/class\=\"parentCat\">\s*<span\s*class\=\"isActive\s*[^>]*?>\s*(?:<b>\s*<\/b>)?\s*([^>]*?)\s*<([\w\W]*?)<\/li>\s*<\/ul>\s*<\/li>/is)
+my $menu4 = $ARGV[4];
+if(@ARGV == 5)
+{
+	print "Arg is >=5 \n";
+	while($content =~ m/class\=\"fLabel\"\s*[^>]*?>\s*([^>]*?)\s*<\/span>([\w\W]*?)value\=\"(?:close|Apply)\"[^>]*?>\s*(?:<\/form>\s*)?<\/div>\s*<\/div>/igs)
+	{
+		my $menu5 = &clean($1);
+		my $cont5 = $2;
+		next if($menu5 =~ m/Category|More\s*categories|Size|Price|You\s*might\s*also\s*like\s*|Free\s*Delivery|Brand/is);
+		# next unless($menu4 =~ m/colour/is);
+		print "Menu => $menu1 -> $menu2 -> $menu3 -> $menu4 -> $menu5\n";
+		while($cont5 =~ m/href\=\"([^>]*?)\"[^>]*?title\=\"([^>]*?)\">|href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<|value\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*</igs)
+		{
+			my $catlink5 = $1.$3.$5;
+			my $menu6 = &clean($2.$4.$6);
+			$catlink5 = "http://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
+			my $cont6 = &lwp_get($catlink5); 
+			&collect_product($menu1,$menu2,$menu3,$menu4,'',$menu5,$menu6,$cont6);
+		}
+	}
+	
+}
+elsif($content =~ m/class\=\"parentCat\">\s*<span\s*class\=\"isActive\s*[^>]*?>\s*(?:<b>\s*<\/b>)?\s*([^>]*?)\s*<([\w\W]*?)<\/li>\s*<\/ul>\s*<\/li>/is)
 {
 	my $menu3  = &clean($1);
 	my $cont2_sub = $2;
@@ -78,6 +100,7 @@ if($content =~ m/class\=\"parentCat\">\s*<span\s*class\=\"isActive\s*[^>]*?>\s*(
 		my $subcontent = lwp_get($catlink3); 
 		if($subcontent =~ m/class\=\"parentCat\">\s*<span\s*class\=\"isActive\s*iconSprite\">\s*([^>]*?)\s*<([\w\W]*?)<\/li>\s*<\/ul>\s*<\/li>/is)
 		{
+			# print "i'm here\n";
 			my $menu4  = &clean($1);
 			my $cont3_sub = $2;
 			while($cont3_sub =~ m/href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*</igs)
@@ -140,6 +163,7 @@ if($content =~ m/class\=\"parentCat\">\s*<span\s*class\=\"isActive\s*[^>]*?>\s*(
 		}
 		else
 		{
+			print "Else Part\n";
 			while($subcontent =~ m/<div\s*class\=\"filter\">\s*<div\s*class\=\"title\">\s*<label>\s*([^>]*?)\s*<\/label>\s*<\/div>([\w\W]*?)<\/div>/igs)
 			{
 				my $menu6 = &clean($1);
@@ -156,18 +180,18 @@ if($content =~ m/class\=\"parentCat\">\s*<span\s*class\=\"isActive\s*[^>]*?>\s*(
 			}
 			while($subcontent =~ m/class\=\"fLabel\"\s*[^>]*?>\s*([^>]*?)\s*<\/span>([\w\W]*?)value\=\"(?:close|Apply)\"[^>]*?>\s*(?:<\/form>\s*)?<\/div>\s*<\/div>/igs)
 			{
-				my $menu4 = &clean($1);
+				my $menu5 = &clean($1);
 				my $cont5 = $2;
-				next if($menu4 =~ m/Category|More\s*categories|Size|Price|You\s*might\s*also\s*like\s*|Free\s*Delivery|Brand/is);
+				next if($menu5 =~ m/Category|More\s*categories|Size|Price|You\s*might\s*also\s*like\s*|Free\s*Delivery|Brand/is);
 				# next unless($menu4 =~ m/colour/is);
-				print "Menu => $menu1 -> $menu2 -> $menu3 -> $menu4 ->\n";
+				print "Menu => $menu1 -> $menu2 -> $menu3 -> $menu4 -> $menu5\n";
 				while($cont5 =~ m/href\=\"([^>]*?)\"[^>]*?title\=\"([^>]*?)\">|href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<|value\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*</igs)
 				{
 					my $catlink5 = $1.$3.$5;
-					my $menu5 = &clean($2.$4.$6);
+					my $menu6 = &clean($2.$4.$6);
 					$catlink5 = "http://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
 					my $cont6 = &lwp_get($catlink5); 
-					&collect_product($menu1,$menu2,$menu3,'','',$menu4,$menu5,$cont6);
+					&collect_product($menu1,$menu2,$menu3,$menu4,'',$menu5,$menu6,$cont6);
 				}
 			}
 			while($subcontent =~ m/<span\s*class\=\"left\">\s*((?!Brand|Size|Price)[^>]*?)\s*<([\w\W]*?)<\/div>\s*<\/div>/igs)
@@ -415,6 +439,7 @@ sub collect_product()
 	if($category_content=~m/<link\s*rel="next"\s*href\=\"([^>]*?)\"\s*\/>/is)
 	{
 		my $next_page_url=$1;	
+		print "Next:: $next_page_url\n";
 		$category_content = lwp_get($next_page_url);
 		goto nextpage;
 		
@@ -422,6 +447,7 @@ sub collect_product()
     elsif($category_content=~m/<span\s*class\=\"current\">[\d]+<\/span>\s*<\/li><li>\s*<a\s*href\=\"([^>]*?)\">/is)
 	{
 		my $next_page_url="http://www.zalando.co.uk/$1";	
+		print "Next:: $next_page_url\n";
 		$category_content = lwp_get($next_page_url);
 		goto nextpage;
 	}
