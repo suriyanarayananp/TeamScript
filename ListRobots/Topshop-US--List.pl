@@ -76,6 +76,8 @@ my @regex_array=('<li\s*class=\"[^<]*?\">\s*<a\s*[^<]*\s*title=\"(New\s*In)\">[\
 '<li\s*class=\"[^<]*?\">\s*<a\s*[^<]*\s*title=\"(Make\s*Up)\">[\w\W]*?<\/a>\s*<div\s*[^<]*>([\w\W]*?)\s*<\/div>\s*<\/li>',
 '<li\s*class=\"[^<]*?\">\s*<a\s*[^<]*\s*title=\"(Sale\s*(?:\&(?:amp;)?\s*Offers)?)\"[^>]*?>[\w\W]*?<\/a>\s*<div\s*[^<]*>([\w\W]*?)\s*<\/div>\s*<\/li>');
 
+# my @regex_array=('<li\s*class=\"[^<]*?\">\s*<a\s*[^<]*\s*title=\"(New\s*In)\">[\w\W]*?<\/a>\s*<div\s*[^<]*>([\w\W]*?)\s*<\/div>\s*<\/li>','<li\s*class=\"[^<]*?\">\s*<a\s*[^<]*\s*title=\"(Clothing)\">[\w\W]*?<\/a>\s*<div\s*[^<]*>([\w\W]*?)\s*<\/div>\s*<\/li>');
+
 my $robo_menu=$ARGV[0];
 
 foreach my $regex (@regex_array)

@@ -154,7 +154,7 @@ sub Product_Insert()
 	while($page =~ m/<h3>\s*<a\s*class\=\"link\"\s*href\=\"([^>]*?)"[^>]*?>\s*[^>]*?\s*<\/a>/igs)
 	{
 		my $product_url = $1;
-		$product_url = $home_url.$1 if($product_url =~ m/(\/s\d+)\//is); # CONSTRUCTING UNIQLE PRODUCT URL
+		$product_url = $home_url.$1 if($product_url =~ m/(\/s\d+)/is); # CONSTRUCTING UNIQLE PRODUCT URL
 		my $product_object_key;
 		
 		# Checking whether product URL already stored in the database. If exist then existing ObjectKey is re-initialized to the URL.

@@ -145,11 +145,10 @@ if($content=~m/class\=nav\-flyout-heading>(\s*<a[^>]*?href\=[^>]*?>\s*$ARGV[1]\s
 							# open ss,">walmart3.html";
 							# print ss $filtercont;
 							# close ss;
-							
+
 							print "$menu1 -> $menu2 -> $menu3 -> $filterheader -> $filtervalue\n";
 							while($filtercont =~ m/data\-item\-id\=\\\"([^>]*?)\\\"[^>]*?>|data\-item\-id\=([^>]*?)\s*data-seller[^>]*?>/igs)
-							{
-								
+							{								
 								my $pid = $utilityobject->Trim($1.$2);
 								my $purl = "http://www.walmart.com/ip/$pid";
 								$purl = $url.$purl unless($purl =~ m/^http/is);

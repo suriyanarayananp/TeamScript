@@ -123,20 +123,11 @@ if($content=~m/<li\s*class\=\"$ARGV[0]\">\s*([\w\W]*?)(?:<li\s*class\=\"category
 	}
 }
 
-# Sending retailer completion information to dashboard
-$dbobject->Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'STOP',$robotname);
-
-# Sending instance completion information to logger
 $logger->send("$robotname :: Instance Completed  :: $pid\n");
-
-# Committing all the transaction.
+################### For Dashboard #######################################
+$dbobject->Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'STOP',$robotname);
+################### For Dashboard #######################################
 $dbobject->commit();
-
-# Disconnecting all DB objects
-$dbobject->disconnect();
-	
-#Destroy all DB object
-$dbobject->Destroy();
 
 
 # Function definition to get product urls.

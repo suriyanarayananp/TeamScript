@@ -30,7 +30,8 @@ my %totalHash;
 
 # Creating user agent (Mozilla Firefox).
 my $ua = LWP::UserAgent->new(show_progress=>1);
-$ua->agent("Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 (.NET CLR 3.5.30729)");
+# $ua->agent("Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 (.NET CLR 3.5.30729)");
+$ua->agent('WGSN;+44 207 516 5099;datacollection@wgsn.com');
 $ua->timeout(30); 
 $ua->cookie_jar({});
 
@@ -67,23 +68,24 @@ $logger->send("$robotname :: Instance Started :: $pid\n");
 
 # Retailer home page content.
 my $home_url = 'http://www.net-a-porter.com'; # RETAILER HOME URL : NET-A-PORTER, US
-my $source_page = $utilityobject->Lwp_Get($home_url);
+my $url = 'http://www.net-a-porter.com/am/cmsContent/TopNavigation.nap?device=desktop&country=US&language=en';
+my $source_page = $utilityobject->Lwp_Get($url);
 
 # Extracts top menus : what's new, clothing, bags, shoes, accessories, lingerie and beauty (excluded the edit and designer - since we scrape designer from the product page).
-while($source_page =~ m/<a\s*class\=\"top\-nav\-link[^>]*?\"\s*href\=\"[^>]*?\">\s*((?!\s*The\s*Edit|\s*Designer|\s*sale)[^>]*?)\s*<\/a>\s*([\w\W]*?)\s*<\/div>\s*<\/div>\s*<\/div>\s*<\/li>/igs)
+while($source_page =~ m/(?:\"((?!Sale|Designer|Magazine)[^\"]*?)\"\:\"\\n\\n\\n\s*<\!\-\-\s*dropdown\s*content\s*\-\->([\w\W]*?)<\/ul>\\n\s*<\/div>\\n\s*<\/div>|\"[^<]*?(Whats_New)[^<]*?\\\"\,false\)\;\s*<\/script>\\n\s*<\!\-\-\s*dropdown\s*content\s*\-\->([\w\W]*?)<\/ul>\\n\s*<\/div>\\n\s*<\/div>)/igs)
 {
 	my $top_menu = $utilityobject->Trim($1); # Clothing.
 	my $top_menu_block = $2;
 	
 	# Extracts menu 2 and menu 2 block from top menu block.
-	while($top_menu_block =~ m/<div\s*class\=\"header\s*border\-bottom[^>]*?\">\s*([^>]*?)\s*<\/div>\s*([\w\W]*?\s*<\/div>)\s*<\/div>/igs)
+	while($top_menu_block =~ m/<div\s*class\=\\\"header\s*border\-bottom[^>]*?\">\s*([^>]*?)\s*<\/div>\s*([\w\W]*?)$/igs)
 	{
 		my $menu_2 = $1; # Shop by.
 		my $menu_2_block = $2;
 		next if($menu_2 =~ m/Designers|Brand/is); # Menu 2 : designer/brand skipped.
 		
 		# Extracts menu 3 and it's corresponding url from menu 2 block (excluding "the trend report" and "all" from menu 2 block).
-		while($menu_2_block =~ m/<a[^>]*?href\=\"([^>]*?)\"\s*>\s*((?!The\s*Trend\s*Report|\s*All\s*)[^>]*?)\s*<\/a>/igs)
+		while($menu_2_block =~ m/<a[^>]*?href\=\\\"([^>]*?)\\\"\s*>\s*((?!Trend\s*Report|\s*All\s*)[^>]*?)\s*<\/a>/igs)
 		{
 			my $menu_3_url = $1;
 			my $menu_3 = $utilityobject->Trim($2); # Blazers.

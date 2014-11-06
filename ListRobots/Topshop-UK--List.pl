@@ -230,11 +230,11 @@ next_page:
 		# Pattern match to make Unique Product URL.
 		if($product_url=~m/^[^>]*\/([^>]*?)\?[^>]*?$/is)
 		{
-			$product_url='http://www.topshop.com/en/tsuk/product/'.$1;
+			$product_url='http://www.topshop.com/en/tseu/product/'.$1;
 		}
 		elsif($product_url=~m/^[^>]*\/([^>]*?)$/is)
 		{
-			$product_url='http://www.topshop.com/en/tsuk/product/'.$1;
+			$product_url='http://www.topshop.com/en/tseu/product/'.$1;
 		}
 		
 		# Insert Product values.

@@ -102,7 +102,7 @@ foreach my $regex(@regex_array)
 		elsif(($menu_11=~m/$robo_menu/is)&&($robo_menu=~m/girl/is))
 		{
 			# Pattern match to get the block under the menu1 is "sale".
-			if ( $main_page_content =~ m/<ul\s*class\s*\=\s*\"\s*column_1\s*\"\s*>\s*<li\s*class\s*\=\s*\"\s*category_1871496\s*"\s*>([\w\W]*?)<\/ul>\s*<\/div>/is)
+			if ( $main_page_content =~ m/<ul\s*class\s*\=\s*\"\s*column_1\s*\"\s*>\s*<li\s*class\s*\=\s*\"\s*category_1928491\s*"\s*>([\w\W]*?)<\/ul>\s*<\/div>/is)
 			{
 				$menu_2_blk=$1;   # Menu2 Block.
 				&func($menu_2_blk,$menu_11,'');  # Passing menu2 block ,their menus as arguments to process further.
@@ -111,7 +111,7 @@ foreach my $regex(@regex_array)
 		elsif(($menu_11=~m/$robo_menu/is)&&($robo_menu=~m/boy/is))
 		{
 			# Pattern match to get the block under the menu1 is "sale".
-			if ( $main_page_content =~ m/<ul\s*class\s*\=\s*\"\s*column_1\s*\"\s*>\s*<li\s*class\s*\=\s*\"\s*category_1885492\s*"\s*>([\w\W]*?)<\/ul>\s*<\/div>/is)
+			if ( $main_page_content =~ m/<ul\s*class\s*\=\s*\"\s*column_1\s*\"\s*>\s*<li\s*class\s*\=\s*\"\s*category_1928502\s*"\s*>([\w\W]*?)<\/ul>\s*<\/div>/is)
 			{
 				$menu_2_blk=$1;   # Menu2 Block.
 				&func($menu_2_blk,$menu_11,'');  # Passing menu2 block ,their menus as arguments to process further.
@@ -134,11 +134,7 @@ foreach my $regex(@regex_array)
 					}
 					&func($menu_2_blk,$menu_11,$menu_22); # Passing menu2 block ,their menus as arguments to process further.
 				}
-			}
-			elsif(($menu_11=~m/$robo_menu/is)&&($menu_11=~m/Gifts/is)) # Pattern matches to collect products under menu "Gifts"(Scenario 3).
-			{
-				&GetProductcat($url,$menu_11,'','','','','','');  # Function call to collect products under filters in gifts topmenu do not have block hence directly collecting products.
-			}
+			}			
 			else
 			{
 				next;
@@ -167,10 +163,10 @@ sub func()  # Function definition to take LHS Menu's(#3 Scenario's ->pages havin
 		$main_list_url="http://www.bhs.co.uk".$main_list_url unless($main_list_url=~m/^\s*http\:/is);
 		
 		# To avoid taking sale in menu3 (having separate sale menu),Furniture.
-		if($menu_3=~m/^\s*sale\s*$|^\s*All\s*Women\'s\s*Sale\s*$|^Furniture$/is)
-		{
-			next;
-		}
+		# if($menu_3=~m/^\s*sale\s*$|^\s*All\s*Women\'s\s*Sale\s*$|^Furniture$/is)
+		# {
+			# next;
+		# }
 		
 		my $main_list_content = $utilityobject->Lwp_Get($main_list_url);
 		
@@ -265,7 +261,7 @@ sub GetProductcat()   # Function definition to get category urls from filter's p
 		if($part_name=~m/Category/is)
 		{
 			# Looping through to get category url and it's name.
-			while($list_part_content=~m/<a[^<]*?href\=\"([^<]*?)\"[^>]*?>\s*([\w\W]*?)<\/a>/igs)
+			while($list_part_content=~m/<a[^<]*?href\=\"([^<]*?)\"\s*title\=\"([^\"]*?)\">/igs)
 			{
 				my $category_url = $1;
 				my $category_name = $utilityobject->Trim($2); 
@@ -403,7 +399,7 @@ next_page:
 		{
 			$product_url=$1;
 			$product_url=~s/^([^>]*?\?)[^>]*?(\&catalogId=[^<]*?)$/$1$2/igs;
-		}		
+		}
 		elsif($product_url=~m/^[^>]*\/([^>]*?)\?[^>]*?$/is) # Pattern match to make unique product URL (If url like "http://www.bhs.co.uk/en/bhuk/product/great-value-polka-print-jersey-gypsy-dress-2651313").
 		{
 			$product_url='http://www.bhs.co.uk/en/bhuk/product/'.$1;
@@ -441,7 +437,7 @@ next_page:
 		unless($menu_333 eq '')
 		{
 			# Pattern match to check whether menu1 is sale (Topmenus have category headers).
-			if($menu_111=~m/(?:Sale\s*(?:&amp;\s*Offers)?|Offers|Sale)/is)
+			if($menu_111=~m/(?:Sale\s*(?:&amp;\s*Offers)?|Offers|Sale|boy|girl)/is)
 			{
 				$dbobject->SaveTag('Menu_2',$menu_333,$product_object_key,$robotname,$Retailer_Random_String);
 			}

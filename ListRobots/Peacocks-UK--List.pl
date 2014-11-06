@@ -30,7 +30,8 @@ my %totalHash;
 
 # Creating user agent (Mozilla Firefox).
 my $ua = LWP::UserAgent->new(show_progress=>1);
-$ua->agent("Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 (.NET CLR 3.5.30729)");
+# $ua->agent("Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 (.NET CLR 3.5.30729)");
+$ua->agent('WGSN;+44 207 516 5099;datacollection@wgsn.com');
 $ua->timeout(30); 
 $ua->cookie_jar({});
 
@@ -70,19 +71,23 @@ my $home_url = 'http://www.peacocks.co.uk';
 my $source_page = $utilityobject->Lwp_Get($home_url);
 
 # Pattern matches top menus, excluding "Trends".
-while($source_page =~ m/<a\s*href\=\"[^>]*?\"\s*class\=\"level\-top\"\s*>\s*<span>\s*([^>]*?)\s*<\/span>\s*([\w\W]*?)\s*<\!\-\-\s*\/menu\s*\-\->/igs)
+while($source_page =~ m/<a\s*href\=\"[^>]*?\"\s*class\=\"[^<]*?level\-top[^<]*?\"\s*>\s*([^>]*?)\s*<\/a>\s*([\w\W]*?)\s*<li\s*class\=\"heart\">/igs)
 {
 	my $top_menu = $utilityobject->Trim($1); # Top menu is stored. For example - Womens.
 	my $top_menu_block = $2;
-		
+
 	# Entry for top menus, "New in" and "Sale".
-	if($top_menu =~ m/New\s*in|Sale/is)
+	if($top_menu =~ m/New\s*in|Sale/is)		
 	{
-		while($top_menu_block =~ m/<a\s*href\=\"([^>]*?)\"\s*>\s*<span>\s*([^>]*?)\s*<\/span>/igs)
+		while($top_menu_block =~ m/<a\s*href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<\/a>/igs)
 		{
 			my $menu_2_url = $1;
 			my $menu_2 = $utilityobject->Trim($2); # New womens.			
 			$menu_2_url = 'http://www.peacocks.co.uk'.$menu_2_url unless($menu_2_url =~ m/^http/is);
+			if($top_menu =~ m/^Sale$/is)
+			{
+				$menu_2_url = 'http://peacocks.co.uk/sale/where/gender/'.lc($1).'.html' if($menu_2 =~ m/^([^<]*?)\s*sale/is);
+			}
 			
 			my $no_filter_url = $menu_2_url;
 			$no_filter_url = $1.'/where/limit/all'.$2 if($no_filter_url=~m/([^>]*?)(\.html)/is);
@@ -91,14 +96,14 @@ while($source_page =~ m/<a\s*href\=\"[^>]*?\"\s*class\=\"level\-top\"\s*>\s*<spa
 			undef $no_filter_page;			
 			my $menu_2_page = $utilityobject->Lwp_Get($menu_2_url);
 			
-			# Fetching filter blocks excluding size, price, offer and gender.
-			while($menu_2_page =~ m/<h4>\s*((?!price|size|offer|gender)[^>]*?)\s*<\/h4>([\w\W]*?)\s*<\/div>\s*<\/div>/igs)
+			# Fetching filter blocks excluding size, price, offer and gender.			
+			while($menu_2_page =~ m/filter\-title\-\-[^\"]*?\">\s*((?!price|size|offer|gender)[^<]*?)\s*<([\w\W]*?)<\/ol>\s*<\/dd>/igs)
 			{				
 				my $filter = $utilityobject->Trim($1); # Colour.
 				my $filter_block = $2;			
 				
 				# Extracting filter values from each filter block.
-				while($filter_block =~ m/setLocation\(\'([^>]*?)\'\)[^>]*?>\s*([^>]*?)\s*<span>/igs)
+				while($filter_block =~ m/<a[^>]*?href\=\"([^\"]*?)\"[^>]*?>\s*([^<]*?)\s*</igs)
 				{
 					my $filter_url = $1;
 					my $filter_value = $utilityobject->Trim($2); # Black.					
@@ -110,22 +115,57 @@ while($source_page =~ m/<a\s*href\=\"[^>]*?\"\s*class\=\"level\-top\"\s*>\s*<spa
 			}
 		}		
 	}
+	elsif($top_menu =~ m/^SWEATER/is) # Entry for top menu : sweater shop
+	{
+		my $url = 'http://www.peacocks.co.uk/sweater-shop';
+		my $page = $utilityobject->Lwp_Get($url);
+		
+		my %hash_url;
+		while($page =~ m/href\=\"(http\:\/\/www\.peacocks\.co\.uk\/(?:(womens|boys|girls))?\/shop\-collections\/[^\"]*?)\"/igs)
+		{
+			my $menu_2_url = $1;
+			my $menu_2 = $2.' '.'sweater';
+			
+			if($hash_url{$menu_2_url} eq '')
+			{
+				$hash_url{$menu_2_url} = $menu_2_url;
+				my $menu_2_page = $utilityobject->Lwp_Get($menu_2_url);
+				
+				while($menu_2_page =~ m/filter\-title\-\-[^\"]*?\">\s*((?!price|size|offer|gender)[^<]*?)\s*<([\w\W]*?)<\/ol>\s*<\/dd>/igs)
+				{
+					my $filter = $utilityobject->Trim($1); # Colour
+					my $filter_block = $2;
+
+					# Extracting filter values from each filter block.
+					while($filter_block =~ m/<a[^>]*?href\=\"([^\"]*?)\"[^>]*?>\s*([^<]*?)\s*</igs)
+					{
+						my $filter_url = $1;
+						my $filter_value = $utilityobject->Trim($2); # Black.
+						
+						$filter_url =~ s/where/where\/limit\/all/igs if($filter_url!~m/where\/limit\/all/is);
+						my $filter_page = $utilityobject->Lwp_Get($filter_url); # Page shows full products after applying filters.
+						&Product_Insert($filter_page,$top_menu,$menu_2,'',$filter,$filter_value); # Transports product_url, top_menu and menu_2 to product_insert module for inserting tags into db (navigation example : menu_1(new in) -> menu_2(shop department) -> menu_3(dresses) -> (colour) -> (black)).
+					}					
+				}
+			}			
+		}
+	}
 	else # Entry for top menus : womens, mens, boys and girls.
 	{
-		while($top_menu_block =~ m/<h6>\s*<span>\s*([^>]*?)\s*<\/span>\s*<\/h6>([\w\W]*?)(?:<li\s*class\=\"level1[^>]*?>|<\!\-\-\s*\/cols\s*\-\->)/igs)
+		while($top_menu_block =~ m/<li\s*class\=\"[^<]*?parent\">\s*<a[^<]*?href\=\"[^\"]*?\"[^>]*?>\s*([^<]*?)\s*<\/a>\s*([\w\W]*?)<\/ul>\s*<\/li>/igs)
 		{
 			my $menu_2 = $utilityobject->Trim($1); # Shop department.
-			my $menu_2_block = $2;			
+			my $menu_2_block = $2;
 			
 			# Extracting menu 3/url from menu 2 block.
-			while($menu_2_block =~ m/<a\s*href\=\"([^>]*?)\"\s*>\s*<span>\s*([^>]*?)\s*<\/span>/igs)
+			while($menu_2_block =~ m/<a\s*href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<\/a>/igs)
 			{
 				my $menu_3_url = $1;
-				my $menu_3 = $utilityobject->Trim($2); # Dresses.
-				my $no_filter_url = $menu_3_url;				
-				
+				my $menu_3 = $utilityobject->Trim($2); # Dresses.				
 				$menu_3_url = 'http://www.peacocks.co.uk'.$menu_3_url unless($menu_3_url =~ m/^http/is);
-				$no_filter_url = $1.'/where/limit/all'.$2 if($no_filter_url=~m/([^>]*?)(\.html)/is);
+				
+				my $no_filter_url = $menu_3_url;
+				$no_filter_url = $1.'/where/limit/all'.$2 if($no_filter_url=~m/([^>]*?)(\.html)/is);				
 				my $no_filter_page = $utilityobject->Lwp_Get($no_filter_url); # Page shows full products for the categories without applying filters.
 				&Product_Insert($no_filter_page,$top_menu,$menu_2,$menu_3); # Transports product_url, top_menu and menu_2 to product_insert module for inserting tags into db (navigation example : menu_1(new in) -> menu_2(shop department) -> menu_3(dresses)).
 				undef $no_filter_page;
@@ -133,13 +173,13 @@ while($source_page =~ m/<a\s*href\=\"[^>]*?\"\s*class\=\"level\-top\"\s*>\s*<spa
 				my $menu_3_page = $utilityobject->Lwp_Get($menu_3_url);
 				
 				# Fetching filter blocks excluding size, price, offer and gender.
-				while($menu_3_page =~ m/<h4>\s*((?!price|size|offer|gender)[^>]*?)\s*<\/h4>([\w\W]*?)\s*<\/div>\s*<\/div>/igs)
+				while($menu_3_page =~ m/filter\-title\-\-[^\"]*?\">\s*((?!price|size|offer|gender)[^<]*?)\s*<([\w\W]*?)<\/ol>\s*<\/dd>/igs)
 				{
 					my $filter = $utilityobject->Trim($1); # Colour
 					my $filter_block = $2;
 					
 					# Extracting filter values from each filter block.
-					while($filter_block =~ m/setLocation\(\'([^>]*?)\'\)[^>]*?>\s*([^>]*?)\s*<span>/igs)
+					while($filter_block =~ m/<a[^>]*?href\=\"([^\"]*?)\"[^>]*?>\s*([^<]*?)\s*</igs)
 					{
 						my $filter_url = $1;
 						my $filter_value = $utilityobject->Trim($2); # Black.
@@ -178,7 +218,10 @@ sub Product_Insert()
 			$product_object_key = $dbobject->SaveProduct($product_url,$robotname,$retailer_id,$Retailer_Random_String);
 			$totalHash{$product_url} = $product_object_key;
 		}
-		$product_object_key = $totalHash{$product_url}; # Using existing product_id if the hash table contains this url.
+		else
+		{
+			$product_object_key = $totalHash{$product_url}; # Using existing product_id if the hash table contains this url.
+		}
 		
 		# Storing menus into database.
 		$dbobject->SaveTag('Menu_1',$top_menu,$product_object_key,$robotname,$Retailer_Random_String) if($top_menu ne '');

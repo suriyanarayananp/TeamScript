@@ -30,7 +30,8 @@ my %totalHash;
 
 # Creating user agent (Mozilla Firefox).
 my $ua = LWP::UserAgent->new(show_progress=>1);
-$ua->agent("Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 (.NET CLR 3.5.30729)");
+# $ua->agent("Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 (.NET CLR 3.5.30729)");
+$ua->agent('WGSN;+44 207 516 5099;datacollection@wgsn.com');
 $ua->timeout(30); 
 $ua->cookie_jar({});
 
@@ -192,7 +193,7 @@ while($source_page =~ m/<li\s*class\=\"floor_\d+\s*\">\s*<a\s*class\=\"[^>]*?\"\
 			else
 			{
 				# Navigation : women -> shop by product -> sale - upto 50% off -> shop by categories.
-				while($menu_3_page =~ m/<h2\s*class\=\"title\">\s*([^>]*?)\s*<\/h2>\s*([\w\W]*?)\s*<\/ul>/igs)
+				while($menu_3_page =~ m/<h4>\s*([^>]*?)\s*<\/h4>\s*([\w\W]*?)\s*<\/ul>/igs)
 				{
 					my $menu_4 = $utilityobject->Trim($1); # Shop by categories.
 					my $menu_4_block = $2;

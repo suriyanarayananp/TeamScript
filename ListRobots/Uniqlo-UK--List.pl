@@ -78,7 +78,8 @@ while($source_page =~ m/<\!\-\-\s*start\s*(?:(?:wo)?men|kidsbabies)?\s*\/\/\s*\-
 	$top_menu =~ s/kidsbabies/kids & babies/igs;
 
 	 # Extracts menu 2 block from top menu block.
-	while($top_menu_block =~ m/<a\s*href\=\"\#\">\s*<img\s*src\=\"[^>]*?\"\s*alt\=\"([^>]*?)\"[^>]*?>\s*<\/a>\s*<ul\s*class\=\"sub\s*hidden\">\s*([\w\W]*?)\s*<\/ul>\s*<\/li>/igs)
+	# while($top_menu_block =~ m/<a\s*href\=\"\#\">\s*<img\s*src\=\"[^>]*?\"\s*alt\=\"([^>]*?)\"[^>]*?>\s*<\/a>\s*<ul\s*class\=\"sub\s*hidden\">\s*([\w\W]*?)\s*<\/ul>\s*<\/li>/igs)
+	while($top_menu_block =~ m/<img\s*src\=\"[^>]*?\"\s*alt\=\"([^>]*?)\"[^>]*?>\s*<\/a>\s*<ul\s*class\=\"sub\s*hidden\">\s*([\w\W]*?)\s*<\/ul>\s*<\/li>/igs)
 	{
 		my $menu_2 = $utilityobject->Trim($1); # Tops.
 		my $menu_2_block = $2;
