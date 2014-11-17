@@ -430,7 +430,7 @@ while($cont =~ m/<a\s*class\=\"inline\-block\-middle\s*site\-top\-link\s*[^>]*?h
 		$menuurl2="http://www.ae.com".$menuurl2 if($menuurl2!~m/^http/is);
 		my $subcont3 = $utilityobject->Lwp_Get($menuurl2);
 		my $test = quotemeta($menu2);
-		if($subcont3 =~ m/>\s*$test\s*<\/span>\s*<\/a>\s*<ul\s*class\=\"(?:subMenu|Menu)\">([\w\W]*?)<\/ul>/is)
+		if($subcont3 =~ m/>\s*$test\s*<\/span>\s*<\/a>\s*(?:<[^>]*?\s*>*)?<ul\s*class\=\"(?:subMenu|Menu)\">([\w\W]*?)<\/ul>/is)
 		{
 			my $subcont4 = $1;
 			# print "Im getting New arrivals block \n";
@@ -441,7 +441,7 @@ while($cont =~ m/<a\s*class\=\"inline\-block\-middle\s*site\-top\-link\s*[^>]*?h
 				my $menuurl3 = $1;
 				my $menu3 = $2;
 				my $test = quotemeta($menu3);
-			
+				$menuurl3="http://www.ae.com".$menuurl3 if($menuurl3 !~ m/^http/is);
 				my $subcont6 = $utilityobject->Lwp_Get($menuurl3);
 				
 				if($subcont6 =~ m/>\s*$test\s*<\/span>\s*<\/a>\s*<ul\s*class\=\"(?:subMenu|Menu)\">([\w\W]*?)<\/ul>/is)
@@ -453,6 +453,7 @@ while($cont =~ m/<a\s*class\=\"inline\-block\-middle\s*site\-top\-link\s*[^>]*?h
 						my $menu4 = $2;
 						my $test = quotemeta($menu4);
 						print "L1 -> $menu1->$menu2->$menu3->$menu4\n";
+						$menuurl4="http://www.ae.com".$menuurl4 if($menuurl4 !~ m/^http/is);
 						my $subcont7 = $utilityobject->Lwp_Get($menuurl4);
 					
 						# Pattern match to get the category ID.
