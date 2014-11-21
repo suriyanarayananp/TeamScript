@@ -76,7 +76,7 @@ my @regex_array=(
 '<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(MAN)\s*<\/a>',
 '<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(KIDS)\s*<\/a>',
 '<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(TRF)\s*<\/a>','<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(DENIM)\s*<\/a>','<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(SHOES\s*\&(?:amp\;)?\s*BAGS)\s*<\/a>',
-'<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(SALE)\s*<\/a>','<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(MINI)\s*<\/a>','<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(NEW COLLECTION)\s*<\/a>');  #Top Menu Collection
+'<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(SALE)\s*<\/a>','<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(MINI)\s*<\/a>','<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(NEW COLLECTION)\s*<\/a>','<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(Special\s*Prices)\s*<\/a>');  #Top Menu Collection
 my %hash_id;
 
 # Passing topmenu as argument to get the products under the corresponding topmenu. 
@@ -103,7 +103,7 @@ foreach my $regex(@regex_array)
 		my $menu_1_content = $utilityobject->Lwp_Get($menu_1_url);
 		
 		# Pattern match to get block to navigate through next submenu.
-		if($menu_1_content =~ m/<ul\s*class=\"current\">\s*<li([\w\W]*)\s*<\/a>\s*<\/li>\s*<\/ul>\s*<\/li>/is)
+		if($menu_1_content =~ m/<ul\s*class=\"current\">\s*<li([\w\W]*\s*<\/a>\s*<\/li>)\s*<\/ul>\s*<\/li>/is)
 		{
 			my $menu_2_content_block=$&;
 			
@@ -115,7 +115,9 @@ foreach my $regex(@regex_array)
 				$menu_2=$utilityobject->Decode($menu_2);
 				# print"menu_2 $menu_2\n";
 				
+				###next unless(($menu_2=~m/Cardigans\s*and\s*Sweaters/is)&&($menu_1=~m/MINI/is)); # To skip if menu2 is sale (Redirected to SALE menu which is being taken separately).
 				next if($menu_2=~m/Sale/is); # To skip if menu2 is sale (Redirected to SALE menu which is being taken separately).
+				
 				
 				&Product_Collection($menu_2_url,$menu_1,$menu_2,'',''); # Function call with menus and their url as arguments to collect product urls.
 				
@@ -127,18 +129,22 @@ foreach my $regex(@regex_array)
 				if($menu_2_content =~ m/<ul\s*class\s*\=\s*\"\s*current\s*\"\s*>[\w\W]*?<ul\s*class\s*\=\s*\"\s*current\s*\"\s*>([\w\W]*?)<\/ul>\s*<\/li>/is)# Pattern match to check whether next navigate available.
 				{
 					#if($menu_2_content =~ m/<li[^>]*?class\s*\=\s*\"\s*current\s*\"\s*>\s*\s*<a[^>]*?>\s*$menu_2_quoted\s*<[^>]*?>\s*<ul\s*class="current">([\w\W]*?)<\/ul>([\w\W]*?)<\/ul>\s*<\/li>\s*<\/ul>/is)##SubMenu2 Block
-					if($menu_2_content =~ m/<li[^>]*?class\s*\=\s*\"\s*current\s*\"\s*>\s*\s*<a[^>]*?>\s*Girl\s*\(3-14\s*years\)\s*<[^>]*?>\s*<ul\s*class="current">([\w\W]*?)<\/ul>([\w\W]*?)<\/ul>\s*<\/li>/is)##SubMenu2 Block
+					##if($menu_2_content =~ m/<li[^>]*?class\s*\=\s*\"\s*current\s*\"\s*>\s*\s*<a[^>]*?>\s*Girl\s*\(3-14\s*years\)\s*<[^>]*?>\s*<ul\s*class="current">([\w\W]*?)<\/ul>([\w\W]*?)<\/ul>\s*<\/li>/is)##SubMenu2 Block
+					if($menu_2_content =~ m/<li[^>]*?class\s*\=\s*\"\s*current\s*\"\s*>\s*\s*<a[^>]*?>\s*$menu_2_quoted\s*<[^>]*?>\s*<ul\s*class="current">([\w\W]*?)<\/ul>([\w\W]*?)<\/ul>\s*<\/li>/is)##SubMenu2 Block
 					{
 						my $main_block_menu2=$1;
 						my $main_block_next=$2;
 						
 						# Pattern match to get block to navigate through next submenu.
-						while($main_block_menu2 =~ m/<li[^>]*?class\s*\=\s*\"\s*current\s*\"\s*>\s*\s*<a[^>]*?>([^<]*?)<([\w\W]*?)$/igs)##SubMenu2 Block
+						while($main_block_menu2 =~ m/<li\s*id\=\"menuItemData_[\d]+\"\s*class\=\"[^>]*?\">\s*<a\s*href\=\"([^>]*?)\">\s*([^>]*?)\s*<\/a>|<li[^>]*?class\s*\=\s*\"\s*current\s*\"\s*>\s*\s*<a[^>]*?>([^<]*?)<([\w\W]*?)$/igs)##SubMenu2 Block
 						{
-							my $menu_3=$1;
-							my $menu_3_urls_block =$2;
-							print "Menu3:: ----> $menu_3\n";
+							my $menu_3_url=$1;
+							my $menu_3=$2.$3;
+							my $menu_3_urls_block =$4;
+							
 							next if($menu_3 eq "Sale"); # To skip if menu2 is sale (Redirected to SALE menu which is being taken separately).
+							
+							&Product_Collection($menu_3_url,$menu_1,$menu_2,$menu_3,'');
 							
 							# Pattern match to get next submenus from the above block.
 							while($menu_3_urls_block =~ m/<\s*a\s*href=\"([^<]*?)"\s*>\s*(?!\s*View\s*All)([^<]*?)\s*<\s*\/a\s*>/igs) ##SubMenu2
@@ -147,7 +153,7 @@ foreach my $regex(@regex_array)
 								my $menu_4=$utilityobject->Trim($2); 
 								my $menu_4=$utilityobject->Decode($menu_4); 
 								# print"menu_3 in scenario1: $menu_3\n";
-								print "menu_4:: ----> $menu_4\n";
+								
 								next if($menu_4 eq "Sale"); # To skip if menu2 is sale (Redirected to SALE menu which is being taken separately).
 								
 								&Product_Collection($menu_4_url,$menu_1,$menu_2,$menu_3,$menu_4); # Function call with menus and their url as arguments to collect product urls.
@@ -158,7 +164,7 @@ foreach my $regex(@regex_array)
 						{
 							my $Next_cat_url=$1;
 							my $menu_3=$2;
-							print "menu_3:: ----> $menu_3\n";
+							
 							&Product_Collection($Next_cat_url,$menu_1,$menu_2,$menu_3,''); # Function call with menus and their url as arguments to collect product urls.
 							
 							my $Next_cat_content = $utilityobject->Lwp_Get($Next_cat_url);
@@ -176,7 +182,7 @@ foreach my $regex(@regex_array)
 									my $menu_4_url =$1;
 									my $menu_4=$utilityobject->Trim($2); 
 									my $menu_4=$utilityobject->Decode($menu_4); 
-									print"menu_4  in Scenario1: $menu_4\n";
+									# print"menu_4  in Scenario1: $menu_4\n";
 									next if($menu_4 eq "Sale"); # To skip if menu2 is sale (Redirected to SALE menu which is being taken separately).
 									
 									&Product_Collection($menu_4_url,$menu_1,$menu_2,$menu_3,$menu_4); # Function call with menus and their url as arguments to collect product urls.
@@ -186,7 +192,7 @@ foreach my $regex(@regex_array)
 					}
 					elsif($menu_2_content =~ m/<li[^>]*?class\s*\=\s*\"\s*current\s*\"\s*>\s*\s*<a[^>]*?>\s*$menu_2_quoted\s*<[^>]*?>\s*<ul\s*class="current">([\w\W]*?)<\/ul>\s*<\/li>/is)
 					{
-						print">>>>>>>>>>         In Scenario1 sub\n";
+						# print">>>>>>>>>>         In Scenario1 sub\n";
 						my $menu_3_block=$1;
 						
 						while($menu_3_block =~ m/<a[^>]*?href\s*\=\s*\"([^>]*?)\"[^>]*?>\s*([^>]*?)</igs)##SubMenu2 Block
@@ -194,7 +200,7 @@ foreach my $regex(@regex_array)
 							my $menu_3_url=$1;	
 							my $menu_3=$2;	
 							
-							print">>>>>>>sub menu_3 $menu_3\n";
+							# print">>>>>>>sub menu_3 $menu_3\n";
 							next if($menu_3 eq "Sale"); # To skip if menu2 is sale (Redirected to SALE menu which is being taken separately).
 							
 							&Product_Collection($menu_3_url,$menu_1,$menu_2,$menu_3,'');
@@ -232,7 +238,7 @@ foreach my $regex(@regex_array)
 							my $menu_3_url =$1;
 							my $menu_3=$utilityobject->Trim($2); 
 							my $menu_3=$utilityobject->Decode($menu_3); 
-							print"menu_3 in scenario2 : $menu_3\n";
+							# print"menu_3 in scenario2 : $menu_3\n";
 							
 							next if($menu_3=~m/Sale/is); # To skip if menu2 is sale (Redirected to SALE menu which is being taken separately).
 							
@@ -245,14 +251,14 @@ foreach my $regex(@regex_array)
 							if($main_list_content=~m/>\s*$menu_3\s*(?:\s*<[^>]*?>\s*)*\s*<ul class="current">([\w\W]*?)<\/ul>/is)
 							{
 								my $menu_4_block=$1;
-								print"menu_4 in scenario2 : $menu_4\n";
+								# print"menu_4 in scenario2 : $menu_4\n";
 								
 								# Pattern match to get next submenus from the above block.
 								while($menu_4_block=~m/<\s*a\s*href=\"([^<]*?)"\s*>\s*(?!\s*View\s*All)([^<]*?)\s*<\s*\/a\s*>/igs)
 								{
 									my $menu_4_url=$1;
 									my $menu_4=$2;
-									print "in menu 4 $menu_4\n";
+									# print "in menu 4 $menu_4\n";
 									next if($menu_4=~m/Sale/is); # To skip if menu2 is sale (Redirected to SALE menu which is being taken separately).
 									
 									&Product_Collection($menu_4_url,$menu_1,$menu_2,$menu_3,$menu_4); # Function call with menus and their url as arguments to collect product urls.
@@ -277,7 +283,7 @@ sub Product_Collection
 	
 	my $cat_id=$1 if($category_url=~m/\-?\s*c\s*(\d+)\s*\.\s*html/is);
 	print "in $category_url\t\n$menu1\t$menu2\t$menu3\t$menu4\n";
-	print "Collecting products.................................................!\n";
+	
 	my $Product_list_content = $utilityobject->Lwp_Get($category_url);
 	
 	my $char_url='http://www.zara.com/webapp/wcs/stores/servlet/CategoryFilterJSON?categoryId='.$cat_id.'&langId=-1&storeId=10706&filterCode=STATIC&ajaxCall=true';
@@ -286,9 +292,12 @@ sub Product_Collection
 	my $color_url='http://www.zara.com/webapp/wcs/stores/servlet/CategoryFilterJSON?categoryId='.$cat_id.'&langId=-1&storeId=10706&filterCode=DYNAMIC&ajaxCall=true';
 	# Formation of color url for the produts under respective category(In filter). 
 	
+	print "CHAR URL::: $char_url\n";
+	print "Colour URL::: $color_url\n";
+	#<STDIN>;
 	my $char_Cont = $utilityobject->Lwp_Get($char_url);
 	my $color_Cont = $utilityobject->Lwp_Get($color_url);
-	
+			
 	# Declaring required variables.
 	my ($prod_id,$product_url,$product_object_key);
 	
@@ -339,7 +348,7 @@ sub charactertag() # Function definition to get characteristics and colour tag i
 	my $Jcont1=shift;
 	my $prod_id1=shift;
 	my $product_object_key1=shift;
-	
+	print "Inside the CHARACTER TAG\n";
 	while($Jcont1=~m/{\s*\"\s*values\s*\"([\w\W]*?)\"\s*type\s*\"\s*\:\s*\"\s*([^>]*?)\s*\"\s*}/igs)  # Characteristics,Colour and quality block (In Filter in RHS).
 	{
 		my $Type1_blk=$1;
@@ -354,7 +363,7 @@ sub charactertag() # Function definition to get characteristics and colour tag i
 			my $name1;
 			
 			$name1=$1 if($Type_blk11=~m/\s*\"\s*name\s*\"\s*\:\s*\"([^\'\"]*?)\s*\"/is); # Getting tag name Eg. Characteristics or color.
-			
+			print "NAME:: $name1\n";
 			# Pattern match to get the sku id's(Product id's) block from the main block.
 			if($Type_blk11=~m/\"\s*skus\s*\"\s*\:([\w\W]*?\"\])/is)   
 			{
@@ -364,13 +373,13 @@ sub charactertag() # Function definition to get characteristics and colour tag i
 				while($Skus_id_blk1=~m/(?:\"|\')\s*([^\'\"]*?)\s*(?:\"|\')/igs)
 				{
 					my $Skuid1=$1;
-					
+					print "CHAR ID::: $Skuid1 \t $prod_id1\n";
 					# Pattern match to get the tag information if product id in product url and sku id from the block is same.
 					if(($Skuid1 eq $prod_id1)||($Skuid1=~m/$prod_id1/))
 					{
 						$Type1=~s/features/characteristics/igs;
 						$Type1=~s/quality/qualities/igs;
-						
+						print "CHARATER::: $Type1 \t $name1\n";
 						# Save the tag information into tag table.
 						$dbobject->SaveTag($Type1,$name1,$product_object_key1,$robotname,$Retailer_Random_String);
 						

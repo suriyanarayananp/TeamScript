@@ -110,16 +110,13 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 			print "Menus :: $Menu1 :: $menu2 :: $menu3\n";
 			
 			# Skipping the Menu if View all
-			#next if (($check_value!~m/^\s*$/is) && ($menu3=~m/View\s*All/is));
-			next if($menu3=~m/View\s*All|all\s*brand/is);					
 			
 			# site Issue / all products displaying
-			next if($menu3=~m/Flats|AW14\s*style|Jelly\s*Shoes/is);
+			next if($menu3=~m/Flats|AW14\s*style|Jelly\s*Shoes|^\s*$|View\s*All|all\s*brand/is);
+						
+			next if(($menu3=~m/Office\s*girl/is)&&($Menu1=~m/Kids/is)); # As per new req
 			
-			next if($menu3=~m/^\s*$/is);
-			
-			next if($menu3 eq '');
-			
+				
 			# If the check flag value is available, then it is Header
 			if(($check_value!~m/^\s*$/is)&&($tag=~m/<\/strong>/is))
 			{
@@ -137,20 +134,31 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 				$menu3_URL='http://www.office.co.uk'.$menu3_URL;
 			}
 			
-			print "MENU 3 URL:: $menu3_URL \n";
+			$menu3_URL=~s/\&amp\;/&/igs;
+			
+			print "MENU 3/4:: $menu3_header \n $menu3 \n";
 			
 			# Setting the URL to fetch 100 products per page
-			if($menu3_URL=~m/\?/is)
+			if(($menu3_URL=~m/\?/is)&&($menu3_URL!~m/pageSize\=/is))
 			{
 				$menu3_URL=$menu3_URL.'&pageSize=100';
 			}
-			else
+			elsif(($menu3_URL=~m/\?/is)&&($menu3_URL=~m/^([^>]*?pageSize\=)([\d]+?)(\&[^>]*?)$/is))
+			{
+				$menu3_URL=$1.'100'.$2;
+			}
+			elsif($menu3_URL=~m/\?/is)
+			{
+				$menu3_URL=$menu3_URL.'&pageSize=100';
+			}
+			elsif($menu3_URL!~m/\?/is)
 			{
 				$menu3_URL=$menu3_URL.'?pageSize=100';
 			}
 			print "MENU 3 URL with page size:: $menu3_URL \n";
 			
 			my $next_page=$menu3_URL;
+			
 			my $domain_url;
 			if($menu3_URL=~m/^([^>]*?)\?[^>]*?$/is)
 			{
@@ -160,9 +168,10 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 			{
 				$domain_url=$menu3_URL;
 			}
-			
+			$menu3_URL=~s/\&amp\;/&/igs;
 			pagination:
 			# Fetching the URL content
+			$next_page=~s/\&amp\;/&/igs;
 			my $page_content =$utilityobject->Lwp_Get($next_page);
 			
 			# Product collection
@@ -184,12 +193,9 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 				# Saving the tag information.
 				$dbobject->SaveTag('Menu_1',$Menu1,$product_object_key,$robotname,$Retailer_Random_String) if($Menu1!~m/^\s*$/is);
 				$dbobject->SaveTag('Menu_2',$menu2,$product_object_key,$robotname,$Retailer_Random_String) if($menu2!~m/^\s*$/is);
-				$dbobject->SaveTag('Menu_3',$menu3_header,$product_object_key,$robotname,$Retailer_Random_String) if(($menu3_header!~m/^\s*$/is) && ($menu3_header ne ''));
-				if(($menu3 ne '')&&($menu3!~m/^\s*$/is))
-				{
-					$dbobject->SaveTag('Menu_3',$menu3,$product_object_key,$robotname,$Retailer_Random_String) if(($menu3!~m/^\s*$/is) && ($menu3_header=~m/^\s*$/is) && ($menu3 ne ''));
-				}
-				$dbobject->SaveTag('Menu_4',$menu3,$product_object_key,$robotname,$Retailer_Random_String) if(($menu3!~m/^\s*$/is) && ($menu3_header!~m/^\s*$/is) && ($menu3 ne ''));
+				$dbobject->SaveTag('Menu_3',$menu3_header,$product_object_key,$robotname,$Retailer_Random_String) if($menu3_header!~m/^\s*$/is);				
+				$dbobject->SaveTag('Menu_3',$menu3,$product_object_key,$robotname,$Retailer_Random_String) if(($menu3!~m/^\s*$/is) && ($menu3_header=~m/^\s*$/is));			
+				$dbobject->SaveTag('Menu_4',$menu3,$product_object_key,$robotname,$Retailer_Random_String) if(($menu3!~m/^\s*$/is) && ($menu3_header!~m/^\s*$/is));
 				
 				# Committing the transaction.
 				$dbobject->commit();				
@@ -237,6 +243,7 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 					
 					# Filter page navigation
 					pagination1:
+					$next_page=~s/\&amp\;/&/igs;
 					# Fetching the URL content
 					my $page_content =$utilityobject->Lwp_Get($next_page);
 					
@@ -251,7 +258,7 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 						# Saving the tag information.
 						$dbobject->SaveTag('Menu_1',$Menu1,$product_object_key,$robotname,$Retailer_Random_String) if($Menu1!~m/^\s*$/is);
 						$dbobject->SaveTag('Menu_2',$menu2,$product_object_key,$robotname,$Retailer_Random_String) if($menu2!~m/^\s*$/is);
-						$dbobject->SaveTag('Menu_3',$menu3_header,$product_object_key,$robotname,$Retailer_Random_String) if($menu3_header ne '');
+						$dbobject->SaveTag('Menu_3',$menu3_header,$product_object_key,$robotname,$Retailer_Random_String) if($menu3_header!~m/^\s*$/is);
 						$dbobject->SaveTag('Menu_3',$menu3,$product_object_key,$robotname,$Retailer_Random_String) if(($menu3!~m/^\s*$/is) && ($menu3_header=~m/^\s*$/is));
 						$dbobject->SaveTag('Menu_4',$menu3,$product_object_key,$robotname,$Retailer_Random_String) if(($menu3!~m/^\s*$/is) && ($menu3_header!~m/^\s*$/is));
 						$dbobject->SaveTag($filter_header,$filter_name,$product_object_key,$robotname,$Retailer_Random_String) if($filter_name!~m/^\s*$/is);
@@ -270,6 +277,7 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 						{
 							$next_page=$domain_url.$next_page;
 						}
+						
 						print "pagination1:: $next_page\n";
 						goto pagination1;
 					}
@@ -288,12 +296,13 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 						{
 							$filter_url=$domain_url.$filter_url;
 						}
-						
+						$filter_url=~s/\&amp\;/&/igs;
 						print "Filter URL:: $filter_url\n";
 						$next_page=$filter_url;
 						
 						# Filter page navigation
 						pagination2:
+						$next_page=~s/\&amp\;/&/igs;
 						# Fetching the URL content
 						my $page_content =$utilityobject->Lwp_Get($next_page);
 						
@@ -308,7 +317,7 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 							# Saving the tag information.
 							$dbobject->SaveTag('Menu_1',$Menu1,$product_object_key,$robotname,$Retailer_Random_String) if($Menu1!~m/^\s*$/is);
 							$dbobject->SaveTag('Menu_2',$menu2,$product_object_key,$robotname,$Retailer_Random_String) if($menu2!~m/^\s*$/is);
-							$dbobject->SaveTag('Menu_3',$menu3_header,$product_object_key,$robotname,$Retailer_Random_String) if($menu3_header ne '');
+							$dbobject->SaveTag('Menu_3',$menu3_header,$product_object_key,$robotname,$Retailer_Random_String) if($menu3_header!~m/^\s*$/is);
 							$dbobject->SaveTag('Menu_3',$menu3,$product_object_key,$robotname,$Retailer_Random_String) if(($menu3!~m/^\s*$/is) && ($menu3_header=~m/^\s*$/is));
 							$dbobject->SaveTag('Menu_4',$menu3,$product_object_key,$robotname,$Retailer_Random_String) if(($menu3!~m/^\s*$/is) && ($menu3_header!~m/^\s*$/is));
 							$dbobject->SaveTag($filter_header,$filter_name,$product_object_key,$robotname,$Retailer_Random_String) if($filter_name!~m/^\s*$/is);
@@ -326,7 +335,7 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 							unless($next_page=~m/^\s*http\:/is)
 							{
 								$next_page=$domain_url.$next_page;
-							}
+							}							
 							print "pagination1:: $next_page\n";
 							goto pagination2;
 						}
