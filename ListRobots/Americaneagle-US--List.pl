@@ -444,7 +444,7 @@ while($cont =~ m/<a\s*class\=\"inline\-block\-middle\s*site\-top\-link\s*[^>]*?h
 				$menuurl3="http://www.ae.com".$menuurl3 if($menuurl3 !~ m/^http/is);
 				my $subcont6 = $utilityobject->Lwp_Get($menuurl3);
 				
-				if($subcont6 =~ m/>\s*$test\s*<\/span>\s*<\/a>\s*<ul\s*class\=\"(?:subMenu|Menu)\">([\w\W]*?)<\/ul>/is)
+				if($subcont6 =~ m/>\s*$test\s*<\/span>\s*<\/a>\s*(?:<ul\s*class\=\"(?:subMenu|Menu)\">|<\/li>\s*<ul>\s*<li\s*class\=\"\">)([\w\W]*?)<\/ul>/is)
 				{
 					my $subcont6blk = $1;
 					while($subcont6blk =~ m/href\=\"([^>]*?)\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
@@ -459,76 +459,25 @@ while($cont =~ m/<a\s*class\=\"inline\-block\-middle\s*site\-top\-link\s*[^>]*?h
 						# Pattern match to get the category ID.
 						my $catid = $1 if($menuurl4 =~ m/catId\=([^>]*?)$/is);
 						
-						# Pattern match to get the block based on the category ID.
-						if($subcont7 =~ m/\{\"$catid\"\:\{\"availablePrdIds\"\:\[([\w\W]*?)\]/is)
+						my @cats;
+						if($subcont7 =~ m/\"displayCategoryIds\"\:\[([^>]*?)\]/is)
 						{
-							my $catCollection = $1;
-							
-							# Collecting the Product URLs.
-							while($catCollection =~ m/\"prdId\"\:\"([^>]*?)\"\,\"faceoutId\"\:\"([^>]*?)\"/igs)
-							{
-								my $pid = $utilityobject->Trim($1);
-								
-								# Form the Product URLs' based on the productID.
-								my $purl = "http://www.ae.com/web/browse/product.jsp?productId=".$pid;
-								
-								# Insert Product_List table based on values collected for the product.
-								my $product_object_key = $dbobject->SaveProduct($purl,$robotname,$retailer_id,$Retailer_Random_String);
-								
-								# Save the Tag Information based on the ProductID and Tag values.
-								$dbobject->SaveTag('Menu_1',$menu1,$product_object_key,$robotname,$Retailer_Random_String);
-								$dbobject->SaveTag($menu2,$menu3,$product_object_key,$robotname,$Retailer_Random_String);
-								$dbobject->SaveTag($menu3,$menu4,$product_object_key,$robotname,$Retailer_Random_String);
-								
-								# Committing the transaction.
-								$dbobject->commit();
-								
-								# Whether the product page URLs having bundle products.
-								if($subcont7 =~ m/\"prdId\"\:\"$pid\"\,\"faceoutId\"\:\"\d+\"\,\"addlBundlePrdId\"\:\{\"prdId\"\:\"([^>]*?)\"/is)
-								{
-									my $pid = $utilityobject->Trim($1);
-									
-									# Form the Product URLs' based on the productID.
-									my $purl = "http://www.ae.com/web/browse/product.jsp?productId=".$pid; 
-									
-									# Insert Product_List table based on values collected for the product.
-									my $product_object_key = $dbobject->SaveProduct($purl,$robotname,$retailer_id,$Retailer_Random_String);
-									
-									# Save the Tag Information based on the ProductID and Tag values.
-									$dbobject->SaveTag('Menu_1',$menu1,$product_object_key,$robotname,$Retailer_Random_String);
-									$dbobject->SaveTag($menu2,$menu3,$product_object_key,$robotname,$Retailer_Random_String);
-									$dbobject->SaveTag($menu3,$menu4,$product_object_key,$robotname,$Retailer_Random_String);
-									
-									# Committing the transaction.
-									$dbobject->commit();
-								}
-							}
+							my $displaycat = $1;
+							$displaycat =~ s/\"//igs;
+							print $displaycat,"\n\n";
+							@cats = split(/\,/, $displaycat);
 						}
-						
-						# Pattern match to getting the productIDs' from the sub content.
-						if($subcont7 =~ m/\{\"availablePrdIds\"\:\[\{\"prdId\"\:\"([^>]*?)\"/is)
+						print "CATS ::  @cats\n";
+						foreach (@cats)
 						{
-							# pattern match to collecting the productID.
-							while($subcont7 =~ m/\{\"availablePrdIds\"\:\[\{\"prdId\"\:\"([^>]*?)\"/igs)
+							$catid = $_;
+							# Pattern match to get the block based on the category ID.
+							if($subcont7 =~ m/\{\"$catid\"\:\{\"availablePrdIds\"\:\[([\w\W]*?)\]/is)
 							{
-								my $pid = $utilityobject->Trim($1);
+								my $catCollection = $1;
 								
-								# Form the Product URLs' based on the productID.
-								my $purl = "http://www.ae.com/web/browse/product.jsp?productId=".$pid;
-								
-								# Insert Product_List table based on values collected for the product.
-								my $product_object_key = $dbobject->SaveProduct($purl,$robotname,$retailer_id,$Retailer_Random_String);
-								
-								# Save the Tag Information based on the ProductID and Tag values.
-								$dbobject->SaveTag('Menu_1',$menu1,$product_object_key,$robotname,$Retailer_Random_String);
-								$dbobject->SaveTag($menu2,$menu3,$product_object_key,$robotname,$Retailer_Random_String);
-								$dbobject->SaveTag($menu3,$menu4,$product_object_key,$robotname,$Retailer_Random_String);
-								
-								# Committing the transaction.
-								$dbobject->commit();
-								
-								# Collecting the bundle product based on the ProductIDs.
-								if($subcont7 =~ m/\"prdId\"\:\"$pid\"\,\"faceoutId\"\:\"\d+\"\,\"addlBundlePrdId\"\:\{\"prdId\"\:\"([^>]*?)\"/is)
+								# Collecting the Product URLs.
+								while($catCollection =~ m/\"prdId\"\:\"([^>]*?)\"\,\"faceoutId\"\:\"([^>]*?)\"/igs)
 								{
 									my $pid = $utilityobject->Trim($1);
 									
@@ -545,6 +494,70 @@ while($cont =~ m/<a\s*class\=\"inline\-block\-middle\s*site\-top\-link\s*[^>]*?h
 									
 									# Committing the transaction.
 									$dbobject->commit();
+									
+									# Whether the product page URLs having bundle products.
+									if($subcont7 =~ m/\"prdId\"\:\"$pid\"\,\"faceoutId\"\:\"\d+\"\,\"addlBundlePrdId\"\:\{\"prdId\"\:\"([^>]*?)\"/is)
+									{
+										my $pid = $utilityobject->Trim($1);
+										
+										# Form the Product URLs' based on the productID.
+										my $purl = "http://www.ae.com/web/browse/product.jsp?productId=".$pid; 
+										
+										# Insert Product_List table based on values collected for the product.
+										my $product_object_key = $dbobject->SaveProduct($purl,$robotname,$retailer_id,$Retailer_Random_String);
+										
+										# Save the Tag Information based on the ProductID and Tag values.
+										$dbobject->SaveTag('Menu_1',$menu1,$product_object_key,$robotname,$Retailer_Random_String);
+										$dbobject->SaveTag($menu2,$menu3,$product_object_key,$robotname,$Retailer_Random_String);
+										$dbobject->SaveTag($menu3,$menu4,$product_object_key,$robotname,$Retailer_Random_String);
+										
+										# Committing the transaction.
+										$dbobject->commit();
+									}
+								}
+							}
+							
+							# Pattern match to getting the productIDs' from the sub content.
+							if($subcont7 =~ m/\{\"availablePrdIds\"\:\[\{\"prdId\"\:\"([^>]*?)\"/is)
+							{
+								# pattern match to collecting the productID.
+								while($subcont7 =~ m/\{\"availablePrdIds\"\:\[\{\"prdId\"\:\"([^>]*?)\"/igs)
+								{
+									my $pid = $utilityobject->Trim($1);
+									
+									# Form the Product URLs' based on the productID.
+									my $purl = "http://www.ae.com/web/browse/product.jsp?productId=".$pid;
+									
+									# Insert Product_List table based on values collected for the product.
+									my $product_object_key = $dbobject->SaveProduct($purl,$robotname,$retailer_id,$Retailer_Random_String);
+									
+									# Save the Tag Information based on the ProductID and Tag values.
+									$dbobject->SaveTag('Menu_1',$menu1,$product_object_key,$robotname,$Retailer_Random_String);
+									$dbobject->SaveTag($menu2,$menu3,$product_object_key,$robotname,$Retailer_Random_String);
+									$dbobject->SaveTag($menu3,$menu4,$product_object_key,$robotname,$Retailer_Random_String);
+									
+									# Committing the transaction.
+									$dbobject->commit();
+									
+									# Collecting the bundle product based on the ProductIDs.
+									if($subcont7 =~ m/\"prdId\"\:\"$pid\"\,\"faceoutId\"\:\"\d+\"\,\"addlBundlePrdId\"\:\{\"prdId\"\:\"([^>]*?)\"/is)
+									{
+										my $pid = $utilityobject->Trim($1);
+										
+										# Form the Product URLs' based on the productID.
+										my $purl = "http://www.ae.com/web/browse/product.jsp?productId=".$pid;
+										
+										# Insert Product_List table based on values collected for the product.
+										my $product_object_key = $dbobject->SaveProduct($purl,$robotname,$retailer_id,$Retailer_Random_String);
+										
+										# Save the Tag Information based on the ProductID and Tag values.
+										$dbobject->SaveTag('Menu_1',$menu1,$product_object_key,$robotname,$Retailer_Random_String);
+										$dbobject->SaveTag($menu2,$menu3,$product_object_key,$robotname,$Retailer_Random_String);
+										$dbobject->SaveTag($menu3,$menu4,$product_object_key,$robotname,$Retailer_Random_String);
+										
+										# Committing the transaction.
+										$dbobject->commit();
+									}
 								}
 							}
 						}

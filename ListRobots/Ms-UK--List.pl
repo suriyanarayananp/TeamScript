@@ -92,7 +92,7 @@ foreach (keys %ids)
 	while($content =~ m/<div\s*id\=\"$ids{$menu1}\"\s*class\=\"mega\-inner\">([\w\W]*?)<\/div>\s*<\/div>\s*<\/div>\s*<\/div>/igs)
 	{
 		my $block1 = $1;
-		while($block1 =~ m/class\=\"header\">\s*([^>]*?)\s*<\/h2>([\w\W]*?)(?:<li>\s*<h2\s*|<\/ul>\s*<\/div>)/igs)
+		while($block1 =~ m/class\=\"header\">\s*(?:<span[^>]*?>\s*)?\s*([^>]*?)(?:<\/span>\s*)?\s*<\/h2>([\w\W]*?)\s*(?:<li>\s*<h2\s*|<\/div>\s*<\/div>)/igs)
 		{
 			my $menu2 = $utilityobject->Trim($1);
 			my $block2 = $2;
@@ -103,7 +103,7 @@ foreach (keys %ids)
 				my $listurl = $1;
 				my $menu3 = $utilityobject->Trim($2);
 				print "$menu1 -> $menu2 -> $menu3\n";
-				
+				# next unless($menu1 =~ m/Men/is && $menu2 =~ m/Clothing/is && $menu3 =~ m/Underwear/is);
 				my $listcontent = $utilityobject->Lwp_Get($listurl);
 				&URL_Collection($listcontent, $menu1, $menu2, $menu3, '', '', '');
 			}
