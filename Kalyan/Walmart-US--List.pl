@@ -80,8 +80,8 @@ if($content=~m/(\s*<a[^>]*?href\=[^>]*?>\s*$ARGV[1]\s*[\w\W]*?)<\/a>\s*<\/div>\s
 	{
 		my $menu2 = $1;
 		my $block2 = $2;
+		$menu2 =~s/\&nbsp\;//igs;
 		# next if($menu2 =~ m/clothing/is);
-		##next unless($menu2 =~ m/Jewelry/is);
 		while($block2 =~ m/href\=\"\s*([^>]*?)\s*\"\s*>\s*([^>]*?)\s*<\/a>/igs)
 		{
 			my $pgurl1 = $1;
@@ -102,10 +102,10 @@ if($content=~m/(\s*<a[^>]*?href\=[^>]*?>\s*$ARGV[1]\s*[\w\W]*?)<\/a>\s*<\/div>\s
 			$abspath = "http://www.walmart.com".$abspath if($abspath !~ m/^http/is);
 			# while($cont2 =~ m/class\=expander\-toggle\s*href\=\"#\">\s*([^>]*?)\s*<\/a>([\w\W]*?)<\/div>\s*<\/div>/igs)  ## LH Filter Block
 			
-			if($cont2 =~ m/class\=(?:\")?expander\-toggle(?:\")?\s*href\=\"#\">\s*([^>]*?)\s*<\/a>([\w\W]*?)<\/div>\s*<\/div>/is)
+			if($cont2 =~ m/class\=(?:\")?expander\-toggle\s*href\=\"#\">\s*([^>]*?)\s*<\/a>([\w\W]*?)<\/div>\s*<\/div>/is)
 			{
 				print "Match1\n";
-				while($cont2 =~ m/class\=(?:\")?expander\-toggle(?:\")?\s*href\=\"#\">\s*([^>]*?)\s*<\/a>([\w\W]*?)<\/div>\s*<\/div>/igs)  ## LH Filter Block
+				while($cont2 =~ m/class\=(?:\")?expander\-toggle\s*href\=\"#\">\s*([^>]*?)\s*<\/a>([\w\W]*?)<\/div>\s*<\/div>/igs)  ## LH Filter Block
 				{
 					my $filterheader = $utilityobject->Decode($1);
 					my $filterblock = $2;
@@ -136,7 +136,7 @@ if($content=~m/(\s*<a[^>]*?href\=[^>]*?>\s*$ARGV[1]\s*[\w\W]*?)<\/a>\s*<\/div>\s
 							my $filtercont = $utilityobject->Lwp_Get($filterurl);
 
 							print "MenuCheck1:: $menu1 -> $menu2 -> $menu3 -> $filterheader -> $filtervalue\n";
-							while($filtercont =~ m/data\-item\-id\=\\\"([^>]*?)\\\"[^>]*?>|data\-item\-id\=(?:\s*\")?([^>]*?)(?:\s*\")?\s*data-seller[^>]*?>/igs)
+							while($filtercont =~ m/data\-item\-id\=\\\"([^>]*?)\\\"[^>]*?>|data\-item\-id\=\"([^>]*?)\"\s*data-seller[^>]*?>/igs)
 							{
 								
 								my $pid = $utilityobject->Trim($1.$2);
@@ -251,7 +251,7 @@ if($content=~m/(\s*<a[^>]*?href\=[^>]*?>\s*$ARGV[1]\s*[\w\W]*?)<\/a>\s*<\/div>\s
 							my $filtercont = $utilityobject->Lwp_Get($filterurl);
 
 							print "MenuCheck:: $menu1 -> $menu2 -> $menu3 -> $filterheader -> $filtervalue\n";
-							while($filtercont =~ m/data\-item\-id\=\\\"([^>]*?)\\\"[^>]*?>|data\-item\-id\=(?:\s*\")?([^>]*?)(?:\s*\")?\s*data-seller[^>]*?>/igs)
+							while($filtercont =~ m/data\-item\-id\=\\\"([^>]*?)\\\"[^>]*?>|data\-item\-id\=\"([^>]*?)\"\s*data-seller[^>]*?>/igs)
 							{
 								
 								my $pid = $utilityobject->Trim($1.$2);
@@ -372,7 +372,7 @@ if($content=~m/(\s*<a[^>]*?href\=[^>]*?>\s*$ARGV[1]\s*[\w\W]*?)<\/a>\s*<\/div>\s
 							# close ss;
 							
 							print "$menu1 -> $menu2 -> $menu3 -> $filterheader -> $filtervalue\n";
-							while($filtercont =~ m/data\-item\-id\=\\\"([^>]*?)\\\"[^>]*?>|data\-item\-id\=(?:\s*\")?([^>]*?)(?:\s*\")?\s*data-seller[^>]*?>/igs)
+							while($filtercont =~ m/data\-item\-id\=\\\"([^>]*?)\\\"[^>]*?>|data\-item\-id\=\"([^>]*?)\"\s*data-seller[^>]*?>/igs)
 							{
 								
 								my $pid = $utilityobject->Trim($1.$2);
@@ -502,7 +502,7 @@ if($content=~m/(\s*<a[^>]*?href\=[^>]*?>\s*$ARGV[1]\s*[\w\W]*?)<\/a>\s*<\/div>\s
 								# close ss;
 								
 								print "$menu1 -> $menu2 -> $menu3 -> $filterheader -> $filtervalue\n";
-								while($filtercont =~ m/data\-item\-id\=\\\"([^>]*?)\\\"[^>]*?>|data\-item\-id\=(?:\s*\")?([^>]*?)(?:\s*\")?\s*data-seller[^>]*?>/igs)
+								while($filtercont =~ m/data\-item\-id\=\\\"([^>]*?)\\\"[^>]*?>|data\-item\-id\=\"([^>]*?)\"\s*data-seller[^>]*?>/igs)
 								{
 									my $pid = $utilityobject->Trim($1.$2);
 									my $purl = "http://www.walmart.com/ip/$pid";
