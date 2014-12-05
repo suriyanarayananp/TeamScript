@@ -69,7 +69,7 @@ $logger->send("$robotname :: Instance Started :: $pid\n");
 my $home_url = 'http://www.dunelondon.com/';
 my $source_page = $utilityobject->Lwp_Get($home_url);
 
-while($source_page =~ m/<a\s*id\=\"[^\"]*?\"\s*href\=\"[^\"]*?\">\s*((?!Brands|New|Sale)[^<]*?)\s*<([\w\W]*?)<\/ul>/igs)
+while($source_page =~ m/<a\s*id\=\"[^\"]*?\"\s*href\=\"[^\"]*?\">\s*((?!Brands|New)[^<]*?)\s*<([\w\W]*?)<\/ul>/igs)
 {
 	my $top_menu = $utilityobject->Trim($1);
 	my $top_menu_block = $2;	
@@ -83,23 +83,29 @@ while($source_page =~ m/<a\s*id\=\"[^\"]*?\"\s*href\=\"[^\"]*?\">\s*((?!Brands|N
 		while($menu_2_page =~ m/<li\s*class\=\"subcat\">\s*<a\s*href\=\"[^>]*?(\d+)\/\">\s*([^<]*?)\s*</igs)
 		{
 			my $category_id = $1;
-			my $menu_3_url = 'http://www.dunelondon.com/page/ajx_facet/?searchbycat='.$category_id.'&productsperpage=1000&first_filter=&filter_cat=&filter_displayoptions=&filter_colour=&filter_price=&filter_brand=&filter_displayoptions2=&filter_size=&page=1&order=';
 			my $menu_3 = $utilityobject->Trim($2);
+			my $menu_3_url;
+			$menu_3_url = 'http://www.dunelondon.com/page/ajx_facet/?searchbycat='.$category_id.'&productsperpage=1000&first_filter=&filter_cat=&filter_displayoptions=&filter_colour=&filter_price=&filter_brand=&filter_displayoptions2=&filter_size=&page=1&order=';
+			$menu_3_url = 'http://www.dunelondon.com/page/ajx_facet/?searchbycat=SALE_'.$category_id.'&productsperpage=1000&first_filter=&filter_cat=&filter_displayoptions=&filter_colour=&filter_price=&filter_brand=&filter_displayoptions2=&filter_size=&page=1&order=' if($top_menu =~ m/^Sale/is);			
 			my $menu_3_page = $utilityobject->Lwp_Get($menu_3_url);
+			print "$top_menu :: $menu_2 :: $menu_3\n";
 			&Product_Insert($menu_3_page,$top_menu,$menu_2,$menu_3);
-			
+
 			while($menu_3_page =~ m/filter_colour\'\,\'([^\']*?)\'/igs)
 			{
 				my $filter_value = $1;
-				my $filter_url = 'http://www.dunelondon.com/page/ajx_facet/?searchbycat='.$category_id.'&productsperpage=1000&first_filter=filter_colour&filter_cat=&filter_displayoptions=&filter_colour=,'.$filter_value.',&filter_price=&filter_brand=&filter_displayoptions2=&filter_size=&page=1&order=';
+				my $filter_url;
+				$filter_url = 'http://www.dunelondon.com/page/ajx_facet/?searchbycat='.$category_id.'&productsperpage=1000&first_filter=filter_colour&filter_cat=&filter_displayoptions=&filter_colour=,'.$filter_value.',&filter_price=&filter_brand=&filter_displayoptions2=&filter_size=&page=1&order=';
+				$filter_url = 'http://www.dunelondon.com/page/ajx_facet/?searchbycat=SALE_'.$category_id.'&productsperpage=1000&first_filter=filter_colour&filter_cat=&filter_displayoptions=&filter_colour=,'.$filter_value.',&filter_price=&filter_brand=&filter_displayoptions2=&filter_size=&page=1&order=' if($top_menu =~ m/^Sale/is);
 				my $filter_page = $utilityobject->Lwp_Get($filter_url);
+				print "$top_menu :: $menu_2 :: $menu_3 :: $filter_value\n";
 				&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,'Colour',$filter_value);
 			}
 		}
 	}
 }
 
-while($source_page =~ m/<a\s*id\=\"[^\"]*?\"\s*href\=\"[^\"]*?\">\s*((?:New|Sale)[^<]*?)\s*<([\w\W]*?)<\/ul>/igs)
+while($source_page =~ m/<a\s*id\=\"[^\"]*?\"\s*href\=\"[^\"]*?\">\s*(New[^<]*?)\s*<([\w\W]*?)<\/ul>/igs)
 {
 	my $top_menu = $utilityobject->Trim($1);
 	my $top_menu_block = $2;	
@@ -111,8 +117,7 @@ while($source_page =~ m/<a\s*id\=\"[^\"]*?\"\s*href\=\"[^\"]*?\">\s*((?:New|Sale
 		my $menu_2_url;
 		
 		$category_id = $1 if($category_id =~ m/_(\d+)$/is);		
-		$menu_2_url = 'http://www.dunelondon.com/page/ajx_facet/?searchbycat=NEW_'.$category_id.'&productsperpage=1000';
-		$menu_2_url = 'http://www.dunelondon.com/page/ajx_facet/?searchbycat=SALE_'.$category_id.'&productsperpage=1000' if($top_menu =~ m/^sale/is);
+		$menu_2_url = 'http://www.dunelondon.com/page/ajx_facet/?searchbycat=NEW_'.$category_id.'&productsperpage=1000';		
 		$menu_2_url = 'http://www.dunelondon.com/page/ajx_facet/?searchbycat=SOON&productsperpage=1000' if($menu_2 =~ m/^coming/is);
 
 		my $menu_2_page = $utilityobject->Lwp_Get($menu_2_url);
@@ -123,7 +128,6 @@ while($source_page =~ m/<a\s*id\=\"[^\"]*?\"\s*href\=\"[^\"]*?\">\s*((?:New|Sale
 			my $filter_value = $1;
 			my $filter_url;
 			$filter_url = 'http://www.dunelondon.com/page/ajx_facet/?searchbycat=NEW_'.$category_id.'&productsperpage=1000&filter_colour=,'.$filter_value.',';
-			$filter_url = 'http://www.dunelondon.com/page/ajx_facet/?searchbycat=SALE_'.$category_id.'&productsperpage=1000&filter_colour=,'.$filter_value.',' if($top_menu =~ m/^sale/is);
 			$filter_url = 'http://www.dunelondon.com/page/ajx_facet/?searchbycat=SOON&productsperpage=1000&filter_colour=,'.$filter_value.',' if($menu_2 =~ m/^coming/is);
 			
 			my $filter_page = $utilityobject->Lwp_Get($filter_url);
