@@ -264,7 +264,7 @@ while($source_page =~ m/\"[^<]*?(?:(Whats_New|Clothing\"\:|Bags\"\:|Shoes\"\:|Ac
 									$sub_category_url = $category_url.'?'.$sub_category_url unless($sub_category_url=~m/^http/is);
 									my $sub_category_page = $utilityobject->Lwp_Get($sub_category_url);
 									
-									while($sub_category_page =~ m/<a\s*class\=\"filter\-item\"\s*href\=\"([^>]*?(?:(colour|designer))Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span[^>]*?>\s*[^>]*?\s*<\/span>\s*<span[^>]*?>\s*([^>]*?)\s*<\/span>/igs)
+									while($sub_category_page =~ m/<a\s*class\=\"filter\-item\"\s*href\=\"([^>]*?(?:(colour|designer))Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span[^>]*?>\s*[^>]*?\s*<\/span>\s*(?:<[^>]*?>)\s*<span[^>]*?>\s*([^>]*?)\s*<\/span>/igs)
 									{
 										my $filter_url = $home_url.$1;
 										my $filter_name = $utilityobject->Trim($2); # Colour.
@@ -367,6 +367,79 @@ while($source_page =~ m/\"[^<]*?(?:(Whats_New|Clothing\"\:|Bags\"\:|Shoes\"\:|Ac
 					}
 				}
 			}			
+		}
+	}
+}
+
+# Products under sale menu.
+if($source_page =~ m/(Sale)\s*top\s*nav\"\:\"\\n\\n\\n\s*<\!\-\-\s*dropdown\s*content\s*\-\->([\w\W]*?<\/div>\\n\s*<\/div>\s*\\n)(?:\s*<\!\-\-\s*DEBUG\:[^>]*?\-\->\\n\s*\\n)?\s*<\/div>/is){
+	my $top_menu = $utilityobject->Trim($1); # Sale.
+	my $top_menu_block = $2;
+	
+	if($top_menu_block =~ m/<div\s*class\=\\\"header\s*border\-bottom[^>]*?\">\s*((?!Designer|Brand)[^>]*?)\s*<\/div>\s*([\w\W]*?)<\/ul>\\n\s*<\/div>\\n\s*<\/div>/is){
+		my $menu_2 = $1; # Shop sale by category.
+		my $menu_2_block = $2;
+		
+		while($menu_2_block =~ m/<a[^>]*?href\=\\\"([^>]*?)\\\"\s*>\s*((?!The\s*Trend\s*Report|\s*All\s*Categories|Sale\s*Designers)[^>]*?)\s*<\/a>/igs){
+			my $menu_3_url = $1;
+			my $menu_3 = $utilityobject->Trim($2); # Dresses.
+			$menu_3_url = $home_url.$menu_3_url unless($menu_3_url =~ m/^http/is);
+			$menu_3_url =~ s/\/uk\/en/\/gb\/en/igs;
+			my $menu_3_page = $utilityobject->Lwp_Get($menu_3_url);
+			
+			if($menu_3 =~ m/^All/is){
+				if($menu_3_page =~ m/<ul\s*id\=\"subnav\"[^>]*?>\s*([\w\W]*?)\s*<\/ul>/is){
+					my $menu_3_block = $1;
+					
+					while($menu_3_block =~ m/<a\s*href\=\"([^>]*?)\">\s*<span>([^<]*?)<\/span>\s*<\/a>/igs){
+						my $menu_4_url = $1;
+						my $menu_4 = $2;
+						$menu_4_url = $home_url.$menu_4_url unless($menu_4_url =~ m/^http/is);
+						my $menu_4_page = $utilityobject->Lwp_Get($menu_4_url);
+						
+						while($menu_4_page=~m/<a\s*class\=\"filter\-item\"\s*href\=\"([^>]*?(?:(colour|designer))Filter\=[^\"]*?)\"\s*title\=\"[^\"]*?\">\s*<span\s*class\=\"filter\-checkbox\">\s*<\/span>\s*<span\s*class\=\"filter\-name\">([^<]*?)<\/span>/igs)
+						{
+							my $append_url = $1.'&npp=view_all';
+							my $filter_name = $utilityobject->Trim($2); # Colour.
+							my $filter_value = $utilityobject->Trim($3); # White.						
+							
+							my $filter_url = $home_url.$append_url;
+							$filter_url =~ s/\/Shop\//\/gb\/en\/Shop\//igs if($filter_url !~ m/gb\/en/is);							
+							my $filter_page = $utilityobject->Lwp_Get($filter_url);
+							&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,$menu_4,'',$filter_name,$filter_value);
+						}
+					
+						while($menu_4_page =~ m/<a\s*class\=\"filter\-item\"\s*href\=\"([^>]*?)\"\s*title\=\"([^\"]*?)\"\s*data\-filter/igs){
+							my $menu_5_url = $1.'&npp=view_all';
+							my $menu_5 = $2;
+							$menu_5_url = $menu_4_url.$menu_5_url unless($menu_5_url =~ m/^http/is);
+							my $menu_5_page = $utilityobject->Lwp_Get($menu_5_url);
+							&Product_Insert($menu_5_page,$top_menu,$menu_2,$menu_3,$menu_4,$menu_5,'','');
+						}
+					}
+				}
+			}
+			else{
+				while($menu_3_page =~ m/<a\s*class\=\"filter\-item\"\s*href\=\"([^>]*?(?:(colour|designer))Filter\=[^\"]*?)\"\s*title\=\"[^\"]*?\">\s*<span\s*class\=\"filter\-checkbox\">\s*<\/span>\s*<span\s*class\=\"filter\-name\">([^<]*?)<\/span>/igs)
+				{
+					my $append_url = $1.'&npp=view_all';
+					my $filter_name = $utilityobject->Trim($2); # Colour.
+					my $filter_value = $utilityobject->Trim($3); # White.						
+					
+					my $filter_url = $menu_3_url.'?'.$append_url;
+					$filter_url =~ s/\/Shop\//\/gb\/en\/Shop\//igs if($filter_url !~ m/gb\/en/is);					
+					my $filter_page = $utilityobject->Lwp_Get($filter_url);
+					&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,'','',$filter_name,$filter_value);
+				}
+
+				while($menu_3_page =~ m/<a\s*class\=\"filter\-item\"\s*href\=\"([^>]*?)\"\s*title\=\"([^\"]*?)\"\s*data\-filter/igs){
+					my $menu_4_url = $1.'&npp=view_all';
+					my $menu_4 = $2;
+					$menu_4_url = $menu_3_url.$menu_4_url unless($menu_4_url =~ m/^http/is);
+					my $menu_4_page = $utilityobject->Lwp_Get($menu_4_url);
+					&Product_Insert($menu_4_page,$top_menu,$menu_2,$menu_3,$menu_4,'','','');
+				}
+			}
 		}
 	}
 }

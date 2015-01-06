@@ -123,11 +123,12 @@ while($source_page =~ m/<li\s*class\=\"level_1[\w\W]*?id\=\"[\w\W]*?\">\s*<a\s*c
 				&Product_Insert($menu_3_page,$top_menu,$menu_2,$menu_3); # Transports product_url, top_menu and menu_2 to product_insert module for inserting tags into db (navigation: women -> clothing -> dresses).
 
 				# Extracts filter block (excluding size and price).
-				while($menu_3_page =~ m/<p\s*class\=\"filter_title\">\s*((?!\s*Size|\s*Price)[^>]*?)\s*<\/p>\s*([\w\W]*?)\s*<\/li>\s*<\/ul>/igs)
+				while($menu_3_page =~ m/<p\s*class\=\"filter_title\">\s*((?!\s*Size|\s*Price|\s*Go\s*to)[^>]*?)\s*<\/p>\s*([\w\W]*?)\s*<\/li>\s*<\/ul>/igs)
 				{
 					my $filter = $utilityobject->Trim($1); # Colour.
 					my $filter_block = $2;
-
+					
+					next if($filter =~ m/^\s*$/is);
 					# Extracts filter value and it's corresponding url.
 					while($filter_block =~ m/<a[^>]*?href\=\"([^>]*?)\">\s*([^>]*?)\s*<\/a>/igs)
 					{

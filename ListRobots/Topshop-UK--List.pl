@@ -98,7 +98,7 @@ foreach my $regex (@regex_array)
 			$menu_2='' if($menu_1=~m/SALE/is);
 			
 			# Pattern Match to skip if Menu2 is "View All".
-			next if($menu_2=~m/^\s*A\-Z\s*$|^\s*View\s*All\s*$|^\s*We\s*Love\s*$/is);;
+			next if($menu_2=~m/^\s*A\-Z\s*$|^\s*View\s*All\s*$|^\s*We\s*Love\s*$/is);
 			
 			# Pattern match to add Home Url if url doesn't start with "http".
 			$main_list_url=$url.$main_list_url unless($main_list_url=~m/^\s*http\:/is);
@@ -183,7 +183,7 @@ Color:
 				}
 				else  # Products taken under color filter.
 				{
-					$part_name=~s/Â//igs;
+					$part_name= 'Color';
 					# Pattern match to get LHM Header and their corresponding Block except "view all". 
 					while($list_part_content=~m/<a[^<]*?href\=\"([^<]*?)\"[^>]*?>([^<]*?)</igs)
 					{

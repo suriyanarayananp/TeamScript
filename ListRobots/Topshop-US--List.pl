@@ -185,7 +185,7 @@ Color:
 				}
 				else  # Products taken under color filter.
 				{
-					$part_name=~s/Â//igs;
+					$part_name= 'Color';
 					# Pattern match to get LHM Header and their corresponding Block except "view all". 
 					while($list_part_content=~m/<a[^<]*?href\=\"([^<]*?)\"[^>]*?>([^<]*?)</igs)
 					{
@@ -257,7 +257,8 @@ next_page:
 		# Insert Tag  values.
 		$dbobject->SaveTag('Menu_1',$menu1,$product_object_key,$robotname,$Retailer_Random_String);
 		$dbobject->SaveTag('Menu_2',$menu2,$product_object_key,$robotname,$Retailer_Random_String) if($menu2 ne '');
-		$dbobject->SaveTag('Category',$category_name1,$product_object_key,$robotname,$Retailer_Random_String) if($category_name1 ne '');
+		$dbobject->SaveTag('Category',$category_name1,$product_object_key,$robotname,$Retailer_Random_String) if(($category_name1 ne '') && ($part_name1 eq ''));
+		$dbobject->SaveTag($part_name1,$category_name1,$product_object_key,$robotname,$Retailer_Random_String) if(($category_name1 ne '') && ($part_name1 ne ''));
 		$dbobject->SaveTag($part_name_clr1,$category_name_clr1,$product_object_key,$robotname,$Retailer_Random_String) if($part_name_clr1 ne '');
 		
 		# Committing the transaction.

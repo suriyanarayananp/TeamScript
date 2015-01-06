@@ -85,7 +85,7 @@ while($source_page =~ m/\"[^<]*?(?:(Whats_New|Clothing\"\:|Bags\"\:|Shoes\"\:|Ac
 		my $menu_2_block = $2;		
 
 		# Extracts menu 3 and it's corresponding url from menu 2 block (excluding "the trend report" and "all" from menu 2 block).
-		while($menu_2_block =~ m/<a[^>]*?href\=\\\"([^>]*?)\\\"\s*>\s*((?!The\s*Trend\s*Report)[^>]*?)\s*<\/a>/igs)
+		while($menu_2_block =~ m/<a[^>]*?href\=\\\"([^>]*?)\\\"\s*>\s*((?!The\s*Trend\s*Report|All\s*)[^>]*?)\s*<\/a>/igs)
 		{
 			my $menu_3_url = $1;
 			my $menu_3 = $utilityobject->Trim($2); # Blazers.
@@ -239,7 +239,7 @@ while($source_page =~ m/\"[^<]*?(?:(Whats_New|Clothing\"\:|Bags\"\:|Shoes\"\:|Ac
 								}
 							}
 						}
-					}					
+					}
 					else
 					{
 						# Navigation: clothing -> shop by -> activewear -> activewear.						
@@ -258,9 +258,10 @@ while($source_page =~ m/\"[^<]*?(?:(Whats_New|Clothing\"\:|Bags\"\:|Shoes\"\:|Ac
 									my $sub_category_url = $1;
 									my $sub_category = $utilityobject->Trim($2); # Tops.
 									$sub_category_url = $category_url.'?'.$sub_category_url unless($sub_category_url=~m/^http/is);
+									$sub_category_url=~s/amp\;//igs;
 									my $sub_category_page = $utilityobject->Lwp_Get($sub_category_url);
 									
-									while($sub_category_page =~ m/<a\s*class\=\"filter\-item\"\s*href\=\"([^>]*?(?:(colour|designer))Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span[^>]*?>\s*[^>]*?\s*<\/span>\s*<span[^>]*?>\s*([^>]*?)\s*<\/span>/igs)
+									while($sub_category_page =~ m/<a\s*class\=\"filter\-item\"\s*href\=\"([^>]*?(?:(colour|designer))Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span[^>]*?>\s*[^>]*?\s*<\/span>\s*(?:<[^>]*?>)\s*<span[^>]*?>\s*([^>]*?)\s*<\/span>/igs)
 									{
 										my $filter_url = $home_url.$1;
 										my $filter_name = $utilityobject->Trim($2); # Colour.
@@ -305,13 +306,13 @@ while($source_page =~ m/\"[^<]*?(?:(Whats_New|Clothing\"\:|Bags\"\:|Shoes\"\:|Ac
 								my $sub_category = $utilityobject->Trim($2);
 								$sub_category_url = $home_url.$sub_category_url unless($sub_category_url =~ m/^http/is);							
 								my $sub_category_page = $utilityobject->Lwp_Get($sub_category_url);
-								
+
 								while($sub_category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"\?([^>]*?(?:(colour|designer))Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
 								{
 									my $filter_url = $sub_category_url.'&'.$1;
 									my $filter_name = $utilityobject->Trim($2); # Colour.
 									my $filter_value = $utilityobject->Trim($3); # White.
-									$filter_url =~ s/^([^>]*?)\?((?:colour|designer)Filter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;
+									$filter_url =~ s/^([^>]*?)\&((?:colour|designer)Filter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;
 									$filter_url =~ s/\&npp\=60/\&npp\=view_all/igs;
 									$filter_url = $filter_url.'&npp=view_all' unless($filter_url =~ m/npp\=/is);
 									$filter_url =~ s/\/Shop\//\/us\/en\/Shop\//igs if($filter_url !~ m/us\/en/is);
