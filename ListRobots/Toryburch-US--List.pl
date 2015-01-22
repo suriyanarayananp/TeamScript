@@ -65,7 +65,7 @@ $dbobject->Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'START',$r
 $logger->send("$robotname :: Instance Started :: $pid\n");
 
 # Getting home page content.
-my $content = $utilityobject->Lwp_Get("http://www.toryburch.com/");
+my $content = $utilityobject->Lwp_Get("http://www.toryburch.com/on/demandware.store/Sites-ToryBurch_US-Site/default/Default-Start?campid=int_us");
 
 ############ URL Collection ##############
 # Pattern match to take Top menu & it's block.
@@ -75,9 +75,7 @@ if($content=~m/<li\s*class\=\"$ARGV[0]\">\s*([\w\W]*?)(?:<li\s*class\=\"category
 	my $block1 = $1;
 	
 	next if($menu1 =~ m/musthaves|beauty|home|Tory\s*daily/is);
-	
-	##$menu1 = "TORY'S MUST-HAVES" if($menu1 =~ m/musthaves/is);
-	
+
 	if($block1 =~ m/class\=\"group\-hdr\">\s*([^>]*?)\s*<([\w\W]*?)<\/ul>/is)
 	{
 		while($block1 =~ m/class\=\"group\-hdr\">\s*([^>]*?)\s*<([\w\W]*?)<\/ul>/igs)
@@ -91,14 +89,13 @@ if($content=~m/<li\s*class\=\"$ARGV[0]\">\s*([\w\W]*?)(?:<li\s*class\=\"category
 			{
 				my $purl = $1;
 				my $menu3 = $2;
-				
+
 				next if(($menu1!~m/Clothing/is)&&($menu3=~m/Workweek\s*chic/is));
-				#next if($menu3=~m/View\s*all/is);
-				
-				my $pcontent = $utilityobject->Lwp_Get($purl);
+
+				my $menu3_content = $utilityobject->Lwp_Get($purl);
 				
 				# Looping through to get the filter header and it's block.
-				while($pcontent=~m/navgroup\s*refinement\s*\"[^>]*?>\s*<h3[^>]*?>((?!Size)[^<]*?)<([\w\W]*?)<\!\s*\-\s*\-\s*END\s*\:\s*refineattributes\s*\-\s*\-\s*>/igs)
+				while($menu3_content=~m/navgroup\s*refinement\s*\"[^>]*?>\s*<h3[^>]*?>((?!Size)[^<]*?)<([\w\W]*?)<\!\s*\-\s*\-\s*END\s*\:\s*refineattributes\s*\-\s*\-\s*>/igs)
 				{
 					my $filter_header = $1;			# Color
 					my $filter_block = $2;  
@@ -111,7 +108,37 @@ if($content=~m/<li\s*class\=\"$ARGV[0]\">\s*([\w\W]*?)(?:<li\s*class\=\"category
 
 						$filter_url=~s/amp;//igs;
 
-						&collect_product($menu1,$menu2,$menu3,$filter_header,$filter_value,$filter_url); # Function call to collect product urls.
+						&collect_product($menu1,$menu2,$menu3,'',$filter_header,$filter_value,$filter_url); # Function call to collect product urls.
+					}
+				}
+					
+				if($menu3_content =~m/>$menu3<\/a>\s*<ul\s*id\=\"category\-level\-2\"\s*class\=\"refinementcategory\">([\w\W]*?)<\/ul>/is)
+				{
+					my $menu3_block=$1;
+					while($menu3_block=~m/<a\s*class\=\"refineLink\s*\"[^>]*?\s*href\=\"([^>]*?)\">\s*([^>]*?)\s*<\/a>/igs)
+					{
+						my $menu4_url=$1;
+						my $menu4=$2;
+						
+						my $pcontent = $utilityobject->Lwp_Get($menu4_url);
+						
+						# Looping through to get the filter header and it's block.
+						while($pcontent=~m/navgroup\s*refinement\s*\"[^>]*?>\s*<h3[^>]*?>((?!Size)[^<]*?)<([\w\W]*?)<\!\s*\-\s*\-\s*END\s*\:\s*refineattributes\s*\-\s*\-\s*>/igs)
+						{
+							my $filter_header = $1;			# Color
+							my $filter_block = $2;  
+
+							# Looping through to get the filter url and it's value.
+							while($filter_block =~ m/href\s*\=\s*\"\s*([^>]*?)\s*\"\s*[^>]*?>\s*([^<]*?)\s*</igs)
+							{
+								my $filter_url = $1;   
+								my $filter_value = $2; # Red, Green , Blue..,
+
+								$filter_url=~s/amp\;//igs;
+
+								&collect_product($menu1,$menu2,$menu3,$menu4,$filter_header,$filter_value,$filter_url); # Function call to collect product urls.
+							}
+						}
 					}
 				}
 			}
@@ -119,7 +146,7 @@ if($content=~m/<li\s*class\=\"$ARGV[0]\">\s*([\w\W]*?)(?:<li\s*class\=\"category
 	}
 	elsif($block1 =~ m/href\s*\=\s*\"\s*([^>]*?)\s*\"\s*[^>]*?>\s*([^<]*?)\s*</is)
 	{
-		&collect_product($menu1,'','','','',$1); # Function call to collect product urls.
+		&collect_product($menu1,'','','','','',$1); # Function call to collect product urls.
 	}
 }
 
@@ -136,11 +163,10 @@ sub collect_product()
 	my $menu_11=shift;
 	my $menu_22=shift;
 	my $menu_33=shift;
+	my $menu_44=shift;
 	my $filter_header_1=shift;
 	my $filter_value_1=shift;
 	my $product_collection_url=shift;
-	
-	print "menu: $menu_11\t$menu_22\t$menu_33\t$filter_header_1\t$filter_value_1\n";
 	
 	$product_collection_url=~s/\#//igs;
 	
@@ -178,7 +204,6 @@ NextPage:
 			$count++;
 
 			my $product_object_key;
-			# my $prod_id=$1 if($prod_url=~m/\/([^\/]*?)\.html/is);
 			
 			if($hash_id{$prod_url} eq '')
 			{
@@ -198,6 +223,10 @@ NextPage:
 			{
 				$dbobject->SaveTag('Menu_3',$menu_33,$product_object_key,$robotname,$Retailer_Random_String);
 			}
+			unless($menu_44=~m/^\s*$/is)
+			{
+				$dbobject->SaveTag('Menu_4',$menu_44,$product_object_key,$robotname,$Retailer_Random_String);
+			}
 			unless($filter_header_1=~m/^\s*$/is)
 			{
 				$dbobject->SaveTag($filter_header_1,$filter_value_1,$product_object_key,$robotname,$Retailer_Random_String) if($filter_value_1 ne '');
@@ -205,7 +234,6 @@ NextPage:
 			# Committing the transaction.
 			$dbobject->commit();
 		}
-		print "Product count: $count\n";
 		
 		# Pattern match to get url for the next page.
 		if($collection_Page_conetnt=~m/thePageURL\s*\=\s*(?:\'|\")([^<]*?ajax[^<]*?)(?:\'|\")/is)
@@ -225,7 +253,6 @@ NextPage:
 			$count++;
 			
 			my $product_object_key;
-			# my $prod_id=$1 if($prod_url=~m/\/([^\/]*?)\.html/is);
 			
 			if($hash_id{$prod_url} eq '')
 			{
@@ -244,6 +271,10 @@ NextPage:
 			unless($menu_33=~m/^\s*$/is)
 			{
 				$dbobject->SaveTag('Menu_3',$menu_33,$product_object_key,$robotname,$Retailer_Random_String);
+			}
+			unless($menu_44=~m/^\s*$/is)
+			{
+				$dbobject->SaveTag('Menu_4',$menu_44,$product_object_key,$robotname,$Retailer_Random_String);
 			}
 			unless($filter_header_1=~m/^\s*$/is)
 			{

@@ -20,7 +20,7 @@ $robotname =$1 if($robotname =~ m/[^>]*?\/*([^\/]+?)\s*$/is);
 my $retailer_name=$robotname;
 $retailer_name =~ s/\-\-List\s*$//igs;
 $retailer_name = lc($retailer_name);
-my $Retailer_Random_String='Zuk';
+my $Retailer_Random_String='Zus';
 my $pid = $$;
 my $ip = `/sbin/ifconfig eth0 | grep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`;
 $ip = $1 if($ip =~ m/inet\s*addr\:([^>]*?)\s+/is);
@@ -64,199 +64,33 @@ $dbobject->Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'START',$r
 # Once script has started send a msg to logger.
 $logger->send("$robotname :: Instance Started :: $pid\n");
 
-# Getting home page content.
-my $content = $utilityobject->Lwp_Get("http://www.zara.com/us/");
-# open FH , ">home.html" or die "File not found\n";
-# print FH $content;
-# close FH;
-
-# Array to take each top menus and it's url.
-my @regex_array=(
-'<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(NEW\s*THIS\s*WEEK)\s*<\/a>','<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(WOMAN)\s*<\/a>',
-'<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(MAN)\s*<\/a>',
-'<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(KIDS)\s*<\/a>',
-'<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(TRF)\s*<\/a>',
-'<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(DENIM)\s*<\/a>',
-'<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(SHOES\s*\&(?:amp\;)?\s*BAGS)\s*<\/a>',
-'<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(SALE)\s*<\/a>','<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(MINI)\s*<\/a>','<li\s*id=\"menuItemData_[^<]*\">\s*<a\s*href=\"([^<]*?)\"\s*>\s*(NEW COLLECTION)\s*<\/a>');  #Top Menu Collection
+my ($menu_1,$menu_2,$menu_3,$menu_4, $col_url);
 my %hash_id;
 
-# Passing topmenu as argument to get the products under the corresponding topmenu. 
-my $robo_menu=$ARGV[0];
+$menu_1=$ARGV[0];
+$menu_2=$ARGV[1];
 
-# Getting each pattern to get menu and it's url from array.
-foreach my $regex(@regex_array)
-{
-	# Pattern match to get each topmenu and the url from the array.
-	if ( $content =~ m/$regex/is )
-	{
-		my $menu_1_url = $1;		          # Menu1 url. 	
-		my $menu_1=$utilityobject->Trim($2);  # Menu1
-		my $menu_1=$utilityobject->Decode($menu_1);  # Menu1
-		
-		# Pattern match to skip topmenu url if menu passed as argument doesn't same as topmenu.
-		next unless($menu_1 eq $robo_menu);
-		
-		# Declaring required variables.
-		my ($cat_id,$menu_2,$menu_3,$menu_4,$menu_5);
-		
-		&Product_Collection($menu_1_url,$menu_1,'','','');
-		
-		my $menu_1_content = $utilityobject->Lwp_Get($menu_1_url);
-		
-		# Pattern match to get block to navigate through next submenu.
-		if($menu_1_content =~ m/<ul\s*class=\"current\">\s*<li([\w\W]*)\s*<\/a>\s*<\/li>\s*<\/ul>\s*<\/li>/is)
-		{
-			my $menu_2_content_block=$&;
-			
-			# Pattern match to get next submenus from the above block.
-			while($menu_2_content_block =~ m/<\s*a\s*href=\"([^<]*?)"\s*>\s*([^<]*?)\s*<\s*\/a\s*>/igs)  ##SubMenu1 (Eg.Coats)
-			{
-				my $menu_2_url=$1;
-				$menu_2=$utilityobject->Trim($2);
-				$menu_2=$utilityobject->Decode($menu_2);
-				
-				next if($menu_2=~m/Sale/is); # To skip if menu2 is sale (Redirected to SALE menu which is being taken separately).
-				
-				&Product_Collection($menu_2_url,$menu_1,$menu_2,'','');
-				
-				my $menu_2_content = $utilityobject->Lwp_Get($menu_2_url);
-				
-				my $menu_2_quoted = quotemeta($menu_2);
-				
-				if($menu_2_content =~ m/<ul\s*class\s*\=\s*\"\s*current\s*\"\s*>[\w\W]*?<ul\s*class\s*\=\s*\"\s*current\s*\"\s*>([\w\W]*?)<\/ul>\s*<\/li>\s*<\/ul>/is)# Pattern match to check whether next navigate available.
-				{
-					if($menu_2_content =~ m/<li[^>]*?class\s*\=\s*\"\s*current\s*\"\s*>\s*\s*<a[^>]*?>\s*$menu_2_quoted\s*<[^>]*?>\s*<ul\s*class="current">([\w\W]*?)<\/ul>([\w\W]*?)<\/ul>\s*<\/li>\s*<\/ul>/is)##SubMenu2 Block
-					{
-						my $main_block_menu2=$1;
-						my $main_block_next=$2;
-						
-						# Pattern match to get block to navigate through next submenu.
-						while($main_block_menu2 =~ m/<li[^>]*?class\s*\=\s*\"\s*current\s*\"\s*>\s*\s*<a[^>]*?>([^<]*?)<([\w\W]*?)$/igs)##SubMenu2 Block
-						{
-							my $menu_3=$1;
-							my $menu_3_urls_block =$2;
-							
-							next if($menu_3 eq "Sale"); # To skip if menu2 is sale (Redirected to SALE menu which is being taken separately).
-							
-							# Pattern match to get next submenus from the above block.
-							while($menu_3_urls_block =~ m/<\s*a\s*href=\"([^<]*?)"\s*>\s*(?!\s*View\s*All)([^<]*?)\s*<\s*\/a\s*>/igs) ##SubMenu2
-							{
-								my $menu_4_url =$1;
-								my $menu_4=$utilityobject->Trim($2); 
-								my $menu_4=$utilityobject->Decode($menu_4); 
-								
-								# next if($menu_4 eq "Sale"); # To skip if menu2 is sale (Redirected to SALE menu which is being taken separately).
-								
-								&Product_Collection($menu_4_url,$menu_1,$menu_2,$menu_3,$menu_4); # Function call with menus and their url as arguments to collect product urls.
-							}
-						}
-						
-						while($main_block_next=~m/<a[^>]*?href\s*\=\s*\"([^>]*?)\s*\"[^>]*?>\s*([^>]*?)\s*</igs)
-						{
-							my $Next_cat_url=$1;
-							my $menu_3=$2;
-							
-							my $Next_cat_content = $utilityobject->Lwp_Get($Next_cat_url);
-							
-							if($Next_cat_content =~ m/<li[^>]*?class\s*\=\s*\"\s*current\s*\"\s*>\s*\s*<a[^>]*?>\s*$menu_3\s*<([\w\W]*?)<\/ul>/is)##SubMenu2 Block
-							{
-								my $menu_3_urls_block=$1;
-								
-								# print"menu_3 in Scenario1: $menu_3\t$menu_3_urls_block\n";
-								next if($menu_3 eq "Sale"); # To skip if menu2 is sale (Redirected to SALE menu which is being taken separately).
-								
-								# Pattern match to get next submenus from the above block.
-								while($menu_3_urls_block =~ m/<\s*a\s*href=\"([^<]*?)"\s*>\s*(?!\s*View\s*All)([^<]*?)\s*<\s*\/a\s*>/igs) ##SubMenu2
-								{
-									my $menu_4_url =$1;
-									my $menu_4=$utilityobject->Trim($2); 
-									my $menu_4=$utilityobject->Decode($menu_4); 
-									# print"menu_4  in Scenario1: $menu_4\n";
-									next if($menu_4 eq "Sale"); # To skip if menu2 is sale (Redirected to SALE menu which is being taken separately).
-									
-									&Product_Collection($menu_4_url,$menu_1,$menu_2,$menu_3,$menu_4); # Function call with menus and their url as arguments to collect product urls.
-								}
-							}
-						}
-					}
-					elsif($menu_2_content =~ m/<li[^>]*?class\s*\=\s*\"\s*current\s*\"\s*>\s*\s*<a[^>]*?>\s*$menu_2_quoted\s*<[^>]*?>\s*<ul\s*class="current">([\w\W]*?)<\/ul>\s*<\/li>/is)
-					{
-						# print">>>>>>>>>>         In Scenario1 sub\n";
-						my $menu_3_block=$1;
-						
-						while($menu_3_block =~ m/<a[^>]*?href\s*\=\s*\"([^>]*?)\"[^>]*?>\s*([^>]*?)</igs)##SubMenu2 Block
-						{
-							my $menu_3_url=$1;	
-							my $menu_3=$2;	
-							
-							# print">>>>>>>sub menu_3 $menu_3\n";
-							
-							&Product_Collection($menu_3_url,$menu_1,$menu_2,$menu_3,'');
-							
-							my $menu_3_content = $utilityobject->Lwp_Get($menu_3_url);
-							
-							my $menu_3_quoted=quotemeta($menu_3);
-							
-							if($menu_3_content=~m/<li[^>]*?class\s*\=\s*\"\s*current[^>]*?\"[^>]*?>\s*<a[^>]*?>\s*$menu_3_quoted\s*<[^>]*?>\s*<ul\s*class="current">([\w\W]*?)<\/ul>\s*<\/li>/is)
-							{
-								my $menu_4_block=$1;
-								
-								while($menu_4_block=~m/<a[^>]*?href\s*\=\s*\"([^>]*?)\"[^>]*?>\s*([^>]*?)</igs)
-								{
-									my $menu_4_url=$1;	
-									my $menu_4=$utilityobject->Trim($2); 
-									my $menu_4=$utilityobject->Decode($menu_4);
-									
-									&Product_Collection($menu_4_url,$menu_1,$menu_2,$menu_3,$menu_4);
-								}
-							}
-						}
-					}
-				}
-				elsif($menu_2_content =~ m/<ul\s*class\s*\=\s*\"\s*current\s*\"\s*>[\w\W]*?<ul\s*class\s*\=\s*\"\s*current\s*\"\s*>([\w\W]*?)<\/ul>/is)	# Pattern match to check whether next navigate available.
-				{
-					# Pattern match to get block to navigate through next submenu.
-					while($menu_2_content =~ m/<ul\s*class\s*\=\s*\"\s*current\s*\"\s*>[\w\W]*?<ul\s*class\s*\=\s*\"\s*current\s*\"\s*>([\w\W]*?)<\/ul>/igs)##SubMenu2 Block
-					{
-						my $menu_3_content_block=$1;
-						
-						# Pattern match to get next submenus from the above block.
-						while($menu_3_content_block =~ m/<\s*a\s*href=\"([^<]*?)"\s*>\s*(?!\s*View\s*All)([^<]*?)\s*<\s*\/a\s*>/igs) ##SubMenu2
-						{
-							my $menu_3_url =$1;
-							my $menu_3=$utilityobject->Trim($2); 
-							my $menu_3=$utilityobject->Decode($menu_3); 
-							my $menu_4_block;
-							
-							next if($menu_3=~m/Sale/is); # To skip if menu2 is sale (Redirected to SALE menu which is being taken separately).
-							
-							&Product_Collection($menu_3_url,$menu_1,$menu_2,$menu_3,'');
-							
-							my $main_list_content = $utilityobject->Lwp_Get($menu_3_url);
-							
-							# Pattern match to get block to navigate through next submenu.
-							if($main_list_content=~m/>\s*$menu_3\s*(?:\s*<[^>]*?>\s*)*\s*<ul class="current">([\w\W]*?)<\/ul>/is)
-							{
-								$menu_4_block=$1;
-								
-								# Pattern match to get next submenus from the above block.
-								while($menu_4_block=~m/<\s*a\s*href=\"([^<]*?)"\s*>\s*(?!\s*View\s*All)([^<]*?)\s*<\s*\/a\s*>/igs)
-								{
-									my $menu_4_url=$1;
-									my $menu_4=$2;
-									next if($menu_4=~m/Sale/is); # To skip if menu2 is sale (Redirected to SALE menu which is being taken separately).
-									
-									&Product_Collection($menu_4_url,$menu_1,$menu_2,$menu_3,$menu_4); # Function call with menus and their url as arguments to collect product urls.
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
+if($ARGV[2]=~m/http\:\/\//is)
+{	
+	$col_url=$ARGV[2];
+	$menu_3='';
+	$menu_4='';
 }
+elsif($ARGV[3]=~m/http\:\/\//is)
+{
+	$col_url=$ARGV[3];
+	$menu_3=$ARGV[2];
+	$menu_4='';
+}
+elsif($ARGV[4]=~m/http\:\/\//is)
+{	
+	$col_url=$ARGV[4];
+	$menu_3=$ARGV[2];
+	$menu_4=$ARGV[3];	
+}
+
+# Product Collection
+&Product_Collection($col_url,$menu_1,$menu_2,$menu_3,$menu_4);
 
 # Function definition to collect products.
 sub Product_Collection
@@ -268,8 +102,6 @@ sub Product_Collection
 	my $menu4=shift;
 	
 	my $cat_id=$1 if($category_url=~m/\-?\s*c\s*(\d+)\s*\.\s*html/is);
-	print "in $category_url\t\t$cat_id\n$menu1\t$menu2\t$menu3\t$menu4\n";
-	
 	my $Product_list_content = $utilityobject->Lwp_Get($category_url);
 	
 	# Formation of characteristic url for the produts under respective category(In filter).
@@ -277,9 +109,7 @@ sub Product_Collection
 	
 	# Formation of color url for the produts under respective category(In filter). 
 	my $color_url='http://www.zara.com/webapp/wcs/stores/servlet/CategoryFilterJSON?categoryId='.$cat_id.'&langId=-1&storeId=11719&filterCode=DYNAMIC&ajaxCall=true';
-	
-	#11719
-	
+
 	my $char_Cont = $utilityobject->Lwp_Get($char_url);
 	my $color_Cont = $utilityobject->Lwp_Get($color_url);
 	
@@ -287,27 +117,27 @@ sub Product_Collection
 	my ($prod_id,$product_url,$product_object_key);
 
 	# Looping through to get product urls.
-	while($Product_list_content=~ m/<a\s*href='([^<]*?)'\s*[^<]*\s*class='item\s*gaProductDetailsLink'/igs) 
+	while($Product_list_content=~ m/<a\s*href\=\'([^<]*?)\'\s*[^<]*\s*class=\'item\s*gaProductDetailsLink\'/igs) 
 	{
 		$product_url = $1;
 		
 		# Pattern match to get the product id to remove duplicate product urls.
 		$prod_id=$1 if($product_url=~m/p\s*(\d+)\s*\.\s*html/is);
 		
-		# Insert Product values.
+		#Insert Product values.
 		if($hash_id{$prod_id} eq  '')
 		{
-			# Insert product url if url not exist.
+			#Insert product url if url not exist.
 			$product_object_key = $dbobject->SaveProduct($product_url,$robotname,$retailer_id,$Retailer_Random_String);
 			$hash_id{$prod_id}=$product_object_key;
 		}
 		else
 		{
-			# Assigning objectkey of already existed product's Objectkey and skip the url if exist and save the new product's tag information along with already existed product url's tag information.
+			#Assigning objectkey of already existed product's Objectkey and skip the url if exist and save the new product's tag information along with already existed product url's tag information.
 			$product_object_key=$hash_id{$prod_id};
 		}
 		
-		# Save the tag information of "Menu 1" if non-empty.
+		# Save the tag information of "Menu 1" if non-empty.		
 		$dbobject->SaveTag('Menu_1',$menu1,$product_object_key,$robotname,$Retailer_Random_String) if($menu1 ne '');  
 		
 		# Save the tag information of "Menu 2" if non-empty. 

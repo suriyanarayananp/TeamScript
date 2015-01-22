@@ -30,7 +30,7 @@ my %hash_id;
 
 # Setting the UserAgent.
 my $ua = LWP::UserAgent->new(show_progress=>1);
-$ua->agent("Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 (.NET CLR 3.5.30729)");
+$ua->agent('WGSN;+44 207 516 5099;datacollection@wgsn.com');
 $ua->timeout(30); 
 $ua->cookie_jar({});
 
@@ -75,12 +75,8 @@ while($content=~m/<a[^>]*?class\s*\=\s*\"\s*drop\"[^>]*?href\s*\=\s*\"\s*([^>]*?
 	my $menu_1_url=$1; 
 	my $menu_1=$utilityobject->Trim($2);
 	
-	print "menu_1 $menu_1 $ARGV[0]\n";
-	
-	next if($menu_1 ne $ARGV[0]);
-	
-	print "menu_1 $menu_1\n";
-	
+	next if($menu_1!~/$ARGV[0]/is);
+
 	&collect_Product($menu_1_url,$menu_1,'','','','');
 	
 	my $content = $utilityobject->Lwp_Get($menu_1_url); 
@@ -90,7 +86,10 @@ while($content=~m/<a[^>]*?class\s*\=\s*\"\s*drop\"[^>]*?href\s*\=\s*\"\s*([^>]*?
 	{
 		my $filter_1_header=$1;
 		my $filter_1_block=$2;  #(SHOP BY CATEGORY-DRESSES)
+
+		next if($filter_1_header=~m/Size|price/is);
 		
+		# Only for the Category Header holding filters
 		if($filter_1_header=~m/CATEGORY/is)
 		{
 			while($filter_1_block=~m/<a[^>]*?(?:data-param\s*\=\s*\"\s*([^>]*?)\s*\"[^>]*?)?href\s*\=\s*\"([^>]*?)"[^>]*?>\s*(?:<[^>]*?>\s*)*([^>]*?)</igs)
@@ -98,23 +97,23 @@ while($content=~m/<a[^>]*?class\s*\=\s*\"\s*drop\"[^>]*?href\s*\=\s*\"\s*([^>]*?
 				my $filter_1_url_ext=$1;
 				my $filter_1_url=$2;
 				my $filter_1_value=$utilityobject->Trim($3);
-				
+
 				$filter_1_url=$filter_1_url."$filter_1_url_ext" if($filter_1_url_ext ne "");
 				
 				# Adding home URL If the URL doesn't Start with "http".
 				$filter_1_url='http://www.forevernew.com.au/'.$filter_1_url unless($filter_1_url=~m/^\s*http\:/is);
 				
-				print "filter_1_url: $filter_1_value $filter_1_url \n";
-				
 				&collect_Product($filter_1_url,$menu_1,$filter_1_header,$filter_1_value,'','','','');
 				
 				my $filter_1_content = $utilityobject->Lwp_Get($filter_1_url);			
 				
-				
+				# Filter matching excluding Size and Price Filters
 				while($filter_1_content=~m/filter-name\s*\"[^>]*?>\s*((?!shop\s*by\s*(?:size|price))[^<]*)<([\w\W]*?)<\/dd>/igs)
 				{
 					my $filter_2_header=$1;
 					my $filter_2_block=$2; #(Dresses=>SHOP BY CATEGORY-DAY DRESSES)
+					
+					next if($filter_2_header=~m/Size|price/is);
 					
 					if($filter_2_header=~m/CATEGORY/is)
 					{
@@ -132,20 +131,21 @@ while($content=~m/<a[^>]*?class\s*\=\s*\"\s*drop\"[^>]*?href\s*\=\s*\"\s*([^>]*?
 						
 							# Adding home URL If the URL doesn't Start with "http".
 							$filter_2_url='http://www.forevernew.com.au/'.$filter_2_url unless($filter_2_url=~m/^\s*http\:/is);
-							
-							print "filter_2_url: $filter_2_header $filter_2_value \n";
-							
+														
 							&collect_Product($filter_2_url,$menu_1,$filter_1_header,$filter_1_value,$filter_2_header,$filter_2_value,'','');
 							
 							my $filter_2_content = $utilityobject->Lwp_Get($filter_2_url);			
-				
+							
+							# Filter matching excluding Size and Price Filters
 							if($filter_2_content=~m/filter-name\s*\"[^>]*?>\s*((?!shop\s*by\s*(?:size|price))[^<]*)<([\w\W]*?)<\/dd>/is)
 							{
 								while($filter_2_content=~m/filter-name\s*\"[^>]*?>\s*((?!shop\s*by\s*(?:size|price))[^<]*)<([\w\W]*?)<\/dd>/igs)
 								{
 									my $filter_3_header=$1;
 									my $filter_3_block=$2; 
-
+									
+									next if($filter_3_header=~m/Size|price/is);
+									
 									$filter_3_header="$filter_2_value" if($filter_3_header=~m/SHOP\s*BY\s*CATEGORY/is);
 									
 									while($filter_3_block=~m/<a[^>]*?(?:data-param\s*\=\s*\"\s*([^>]*?)\s*\"[^>]*?)?href\s*\=\s*\"([^>]*?)"[^>]*?>\s*(?:<[^>]*?>\s*)*([^>]*?)</igs)
@@ -160,9 +160,7 @@ while($content=~m/<a[^>]*?class\s*\=\s*\"\s*drop\"[^>]*?href\s*\=\s*\"\s*([^>]*?
 									
 										# Adding home URL If the URL doesn't Start with "http".
 										$filter_3_url='http://www.forevernew.com.au/'.$filter_3_url unless($filter_3_url=~m/^\s*http\:/is);
-										
-										print "filter_3_url: $filter_3_header $filter_3_value \n";
-										
+
 										&collect_Product($filter_3_url,$menu_1,$filter_1_header,$filter_1_value,$filter_2_header,$filter_2_value,$filter_3_header,$filter_3_value);
 									}
 								}
@@ -176,16 +174,14 @@ while($content=~m/<a[^>]*?class\s*\=\s*\"\s*drop\"[^>]*?href\s*\=\s*\"\s*([^>]*?
 							my $filter_2_url_ext=$1;
 							my $filter_2_url=$2;
 							my $filter_2_value=$utilityobject->Trim($3);
-							
+
 							next if($filter_2_value=~m/\b\s*Back\s*to/is);
 							
 							$filter_2_url=$filter_2_url."$filter_2_url_ext" if($filter_2_url_ext ne "");
 						
 							# Adding home URL If the URL doesn't Start with "http".
 							$filter_2_url='http://www.forevernew.com.au/'.$filter_2_url unless($filter_2_url=~m/^\s*http\:/is);
-							
-							print "filter_2_url: $filter_2_header $filter_2_value \n";
-							
+
 							&collect_Product($filter_2_url,$menu_1,$filter_1_header,$filter_1_value,$filter_2_header,$filter_2_value,'','');
 						}								
 					}
@@ -194,7 +190,6 @@ while($content=~m/<a[^>]*?class\s*\=\s*\"\s*drop\"[^>]*?href\s*\=\s*\"\s*([^>]*?
 		}
 	}			
 }
-
 
 $logger->send("$robotname :: Instance Completed  :: $pid\n");
 #################### For Dashboard #######################################
@@ -213,8 +208,6 @@ sub collect_Product() #Function Definition to get Products url
 	my $filter_33_header=shift;
 	my $filter_33_value=shift;
 	
-	print "Menu in fun: $menu_11\t$filter_11_header\t$filter_11_value\tfilter_22 :$filter_22_header\t$filter_22_value \t filter_33: $filter_33_header\t $filter_33_value\n";
-	
 	# Getting the Content of the Category URL.
 	my $prouduct_list_content = $utilityobject->Lwp_Get($Content_url);			
 	my $total_items;
@@ -223,11 +216,8 @@ sub collect_Product() #Function Definition to get Products url
 	if($prouduct_list_content=~m/total-items\"[^>]*?>\s*([\d]+)\s*[^<]*?</is)
 	{
 		$total_items=$1;
-		print "total_items: $total_items\n";
 		$total_items=$total_items/9;
-		# print "total_items divided: $total_items\n";
 		$total_items=$total_items+1;
-		# print ">>total_items final: $total_items\n";
 	}
 		
 	if($count>$total_items) # $total_items eq 0
@@ -238,7 +228,6 @@ sub collect_Product() #Function Definition to get Products url
 			
 			# Adding home URL If the URL doesn't Start with "http".
 			$product_url='http://www.forevernew.com.au'.$product_url unless($product_url=~m/^\s*http\:/is);
-			print "product_url: $product_url\n";
 			
 			my $product_id=$1 if($product_url=~m/(\d+)/is);
 			
@@ -289,7 +278,6 @@ sub collect_Product() #Function Definition to get Products url
 		while($count<=$total_items)
 		{
 			my $product_pageno_content = $utilityobject->Lwp_Get("$Content_url"."$count");
-			print "count: $count\n";
 			
 			# Pattern Match to collect Product URLs.
 			while($product_pageno_content=~m/<a[^>]*?href\s*\=\s*\"([^>]*?)(?:\?[^>]*?)?\"[^>]*?class\s*\=\s*\"\s*product\-image[^>]*?>/igs)
@@ -297,8 +285,7 @@ sub collect_Product() #Function Definition to get Products url
 				my $product_url=$1;
 				# Adding home URL If the URL doesn't Start with "http".
 				$product_url='http://www.forevernew.com.au'.$product_url unless($product_url=~m/^\s*http\:/is);
-				print "product_url: $product_url\n";
-				
+
 				my $product_id=$1 if($product_url=~m/(\d+)/is);
 			
 				# Calling SaveProduct to make entry to the product table.

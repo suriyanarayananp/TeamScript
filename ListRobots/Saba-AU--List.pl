@@ -19,7 +19,7 @@ $robotname =$1 if($robotname =~ m/[^>]*?\/*([^\/]+?)\s*$/is);
 my $retailer_name=$robotname;
 $retailer_name =~ s/\-\-List\s*$//igs;
 $retailer_name = lc($retailer_name);
-my $Retailer_Random_String='Kar';
+my $Retailer_Random_String='Sab';
 my $pid = $$;
 my $ip = `/sbin/ifconfig eth0 | grep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`;
 $ip = $1 if($ip =~ m/inet\s*addr\:([^>]*?)\s+/is);
@@ -66,7 +66,6 @@ my $url = 'http://www.saba.com.au';
 my $content = $utilityobject->Lwp_Get($url);
 
 # Extraction of the Menu 1 and Menu 1 URL
-##while($content=~m/<a\s*href\=\"([^>]*?)\"[^>]*?class\=\"level\-1[^>]*?>\s*([^>]*?)\s*<\/a>/igs)
 while($content=~m/<a\s*href\=\"([^>]*?)\"[^>]*?class\=\"level\-1[^>]*?>\s*([^>]*?)\s*<\/a>\s*<div\s*class\=\"level\-2([\w\W]*?)<\/div>\s*<\/div>/igs)
 {
 	my $menu_1_url=$1;
@@ -75,9 +74,7 @@ while($content=~m/<a\s*href\=\"([^>]*?)\"[^>]*?class\=\"level\-1[^>]*?>\s*([^>]*
 	
 	# Skipping the Saba Style menu
 	next if($menu_1=~m/SABA\s*Style/is);
-	
-	##next unless($menu_1=~m/SUIT\s*STORE/is); ### Only for testing
-	
+
 	if($menu_1=~m/SUIT\s*STORE/is)
 	{
 		while($menu_1_block=~m/<div\s*class\=\"level\-2\">\s*([\w\W]*?)\s*<\/a>[\w\W]*?<ul\s*class\=\"level\-3\">([\W\w]*?)<\/ul>/igs)
@@ -131,11 +128,115 @@ while($content=~m/<a\s*href\=\"([^>]*?)\"[^>]*?class\=\"level\-1[^>]*?>\s*([^>]*
 		my $menu_2_url=$1;
 		my $menu_2=$utilityobject->Trim($2);		
 		
-		my $menu_2_content=$utilityobject->Lwp_Get($menu_2_url);
-		$menu_2_url=~s/\?[^>]*?$//igs;  
+		$menu_2_url=$menu_2_url.'all-denim/' if($menu_2=~m/Denim/is);	
+		$menu_2_url=$menu_2_url.'stripes/' if($menu_2=~m/Trends/is);
 		
-		# Extraction of Image Block
-		if($menu_2_content=~m/<a[^>]*?href\=\"$menu_2_url"[^>]*?>\s*[^>]*?\s*<\/a>\s*<div\s*class\=\"level\-3\">\s*<ul\s*class\=\"level\-3\">([\w\W]*?)<\/div>/is)
+		my $menu_2_content=$utilityobject->Lwp_Get($menu_2_url);
+		
+		# Extraction of colour heading and Block
+		if($menu_2_content=~m/<span\s*class\=\"section\-heading\">\s*([^>]*?)\s*<\/span>([\w\W]*?)<\/ul>/is)
+		{
+			my $colour1=$1;
+			my $Colour_block=$2;
+			
+			# Extraction of Colours and its Naviagtion URL
+			while( $Colour_block=~m/<span>\s*([^>]*?)\s*<\/span>\s*<input[^>]*?value\=\"([^>]*?)\"[^>]*?>\s*<\/input>/igs)
+			{
+				my $Colour=$utilityobject->Trim($1);
+				my $Colour_url=$2;
+				$Colour_url=~s/\&amp\;/&/igs;
+				
+				# Colour URL formating for listing all the proucts in single page
+				if($Colour_url=~m/\?/is)
+				{
+					$Colour_url=$Colour_url.'&format=ajax&format=ajax';
+				}
+				else
+				{
+					$Colour_url=$Colour_url.'?format=ajax&format=ajax';
+				}
+				
+				my $Colour_content=$utilityobject->Lwp_Get($Colour_url);
+				
+				# Calling the product collection sub-routine
+				&collect_product($Colour_content,$menu_1,$menu_2,$Colour,'',$colour1);
+			}
+		}
+			
+		# Extraction of Image Block		
+		if($menu_2_content=~m/class\=\"level-1[^>]*?\">\s*$menu_1\s*<\/a>([\w\W]*?)<\!\-\-\s*end\s*div_three\-col\-group\s*\-\->/is)
+		{
+			my $menu_2_block=$1;
+			if($menu_2_block=~m/>\s*$menu_2\s*<\/a>\s*<div\s*class\=\"level\-3\">\s*<ul\s*class\=\"level\-3\">([\w\W]*?)<\/div>/is)
+			{
+				my $menu_3_block=$1;
+				
+				# Extraction of Menu 3
+				while($menu_3_block=~m/<a[^>]*?href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<\/a>/igs)
+				{				
+					my $menu_3_url=$1;
+					my $menu_3=$utilityobject->Trim($2);
+					next if($menu_3=~m/Under\s*\$[\d\s]+/is);
+					my $menu_3_content=$utilityobject->Lwp_Get($menu_3_url);
+					
+					# Extraction of colour heading and Block
+					if($menu_3_content=~m/<span\s*class\=\"section\-heading\">\s*([^>]*?)\s*<\/span>([\w\W]*?)<\/ul>/is)
+					{
+						my $colour1=$1;
+						my $Colour_block=$2;
+						
+						# Extraction of Colours and its Naviagtion URL
+						while( $Colour_block=~m/<span>\s*([^>]*?)\s*<\/span>\s*<input[^>]*?value\=\"([^>]*?)\"[^>]*?>\s*<\/input>/igs)
+						{
+							my $Colour=$utilityobject->Trim($1);
+							my $Colour_url=$2;
+							$Colour_url=~s/\&amp\;/&/igs;
+							
+							# Colour URL formating for listing all the proucts in single page
+							if($Colour_url=~m/\?/is)
+							{
+								$Colour_url=$Colour_url.'&format=ajax&format=ajax';
+							}
+							else
+							{
+								$Colour_url=$Colour_url.'?format=ajax&format=ajax';
+							}
+							
+							my $Colour_content=$utilityobject->Lwp_Get($Colour_url);
+							
+							# Calling the product collection sub-routine
+							&collect_product($Colour_content,$menu_1,$menu_2,$Colour,$menu_3,$colour1);
+						}
+					}
+				}
+			}
+			elsif($menu_2_block=~m/<span\s*class\=\"section\-heading\">\s*([^>]*?)\s*<\/span>([\w\W]*?)<\/ul>/is) # colour block
+			{
+				my $colour1=$1;
+				my $Colour_block=$2;
+				while( $Colour_block=~m/<span>\s*([^>]*?)\s*<\/span>\s*<input[^>]*?value\=\"([^>]*?)\"[^>]*?>\s*<\/input>/igs)
+				{
+					my $Colour=$utilityobject->Trim($1);
+					my $Colour_url=$2;
+					$Colour_url=~s/\&amp\;/&/igs;
+					
+					# Colour URL formating for listing all the proucts in single page
+					if($Colour_url=~m/\?/is)
+					{
+						$Colour_url=$Colour_url.'&format=ajax&format=ajax';
+					}
+					else
+					{
+						$Colour_url=$Colour_url.'?format=ajax&format=ajax';
+					}
+					my $Colour_content=$utilityobject->Lwp_Get($Colour_url);
+					
+					# Calling the product collection sub-routine
+					&collect_product($Colour_content,$menu_1,$menu_2,$Colour,'',$colour1);
+				}
+			}
+		}
+		elsif($menu_2_content=~m/<a[^>]*?href\=\"$menu_2_url"[^>]*?>\s*[^>]*?\s*<\/a>\s*<div\s*class\=\"level\-3\">\s*<ul\s*class\=\"level\-3\">([\w\W]*?)<\/div>/is)
 		{
 			my $menu_3_block=$1;
 			
@@ -221,7 +322,6 @@ $dbobject->disconnect();
 #Destroy all DB object
 $dbobject->Destroy();
 
-
 #Product collection Sub-routine
 
 sub collect_product()
@@ -242,7 +342,6 @@ sub collect_product()
 	{
 		my $prod_url=$1;
 		$prod_url=~s/\?[^>]*?$//igs;
-		
 		# To insert product URL into table on checking the product is not available already
 		my $product_object_key = $dbobject->SaveProduct($prod_url,$robotname,$retailer_id,$Retailer_Random_String);
 		
@@ -259,13 +358,13 @@ sub collect_product()
 			$dbobject->SaveTag('Menu_3',$menu_3,$product_object_key,$robotname,$Retailer_Random_String) if($menu_3 ne '');
 			$dbobject->SaveTag($colour1,$Colour,$product_object_key,$robotname,$Retailer_Random_String) if($Colour ne '');
 		}
+		$dbobject->commit();
 	}
 	
 	# Collecting the next page naviagtions URL
 	if($List_Page_conetnt=~m/<a[^>]*?href\=\"([^>]*?)\"[^>]*?>\s*<span[^>]*?>\s*Next\s*<\/span>\s*<\/a>/is)
 	{
 		my $next_url=$1;
-		##$next_url=~s/\?/\&/igs;
 		
 		$next_url=~s/\&amp\;/&/igs;				
 		# Colour URL formating for listing all the proucts in single page
@@ -277,9 +376,7 @@ sub collect_product()
 		{
 			$next_url=$next_url.'?format=ajax&format=ajax';
 		}
-				
-		# $next_url=$next_url.'?format=ajax&format=ajax';
-		
+
 		$List_Page_conetnt = $utilityobject->Lwp_Get($next_url);
 		# Redirecting to Next_page1 label point
 		goto next_page1;

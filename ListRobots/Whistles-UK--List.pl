@@ -60,37 +60,26 @@ $dbobject->Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'START',$r
 # Sending retailer starting information to logger 
 $logger->send("$robotname :: Instance Started :: $pid\n");
 
+# Extracting the Main page source
 my $url='http://www.whistles.co.uk/';
 my $content = $utilityobject->Lwp_Get($url);
 my $flag=0;
-#Menu-1
-##while($content=~m/<a\s*href\=\"([^>]*?)\"\s*class\=\"level\-1\">\s*([^>]*?)\s*<\/a>([\w\W]*?)<\/div>\s*<\/div>/igs)
+
+#Menu-1 collection
 while($content=~m/<a\s*href\=\"([^>]*?)\"\s*class\=\"level\-1[^>]*?>[\w\W]*?\s*([^>]*?)\s*<\/span>\s*<\/a>([\w\W]*?)<\/div>\s*<\/div>/igs)
 {
 	my $menu_1_URL=$1;
 	my $menu_1=$utilityobject->Trim($2);
 	my $menu1_block=$3;	
-	print "MENU1:: $menu_1\n";
-	#Menu-2
-	# while($menu1_block=~m/<a\s*href\=\"([^>]*?)\"\s*class\=\"level\-2\"[^>]*?>\s*([^>]*?)\s*</igs)
-	# {
-		# my $menu2_url=$1;
-		# my $menu_2=$utilityobject->Trim($2);
-		
-	my $menu2_content=$utilityobject->Lwp_Get($menu_1_URL);
-		##print "Inside the While Loop 2 of Whistles:: $menu_2\n";
-		
-		##while($menu2_content=~m/<span\s*class\=\"menu\-item\">([^>]*?)<\/span>([\w\W]*?)<\/ul>\s*<\/div>\s*<\/div>/igs)
-	# if($menu2_content=~m/<span\s*class\=\"menu\-item[^>]*?\">([^>]*?)<\/span>\s*<\/a>\s*<div\s*class([\w\W]*?)<\/ul>\s*<\/div>\s*<\/div>/igs)
-	# {	
+	
+	my $menu2_content=$utilityobject->Lwp_Get($menu_1_URL);	
 		my $countf=0;
+		#Menu-2 collection 
 		while($menu2_content=~m/<span\s*class\=\"menu\-item[^>]*?\">([^>]*?)<\/span>\s*<\/a>\s*<div\s*class([\w\W]*?)<\/ul>\s*<\/div>\s*<\/div>/igs)
 		{
 			my $menu11=$1;
 			my $menu11_block=$2;
-			
-			print "MENU2:: $menu11\n";
-			
+			# Collection of Menu 3
 			while($menu11_block=~m/<a\s*href\=\"([^>]*?)\"\s*class\=\"level\-2\"[^>]*?>\s*([^>]*?)\s*</igs)
 			{
 				my $menu22_url=$1;
@@ -106,7 +95,7 @@ while($content=~m/<a\s*href\=\"([^>]*?)\"\s*class\=\"level\-1[^>]*?>[\w\W]*?\s*(
 								
 				my $menu22_content=$utilityobject->Lwp_Get($menu22_url);
 		
-				#Menu-3
+				#Collection of Menu-3
 				if($menu22_content=~m/<h3\s*class\=\"toggle\">\s*<span>\s*(Refine\s*by\s*Type|Type|Refine\s*by\s*Colour|Colour|by\s*product\s*type|by\s*colour|\s*Refine\s*by\s*category)\s*<\/span>([\w\W]*?)<\/div>/is)
 				{
 					while($menu22_content=~m/<h3\s*class\=\"toggle\">\s*<span>\s*(Refine\s*by\s*Type|Type|Refine\s*by\s*Colour|Colour|by\s*product\s*type|by\s*colour|\s*Refine\s*by\s*category)\s*<\/span>([\w\W]*?)<\/div>/igs)
@@ -115,7 +104,7 @@ while($content=~m/<a\s*href\=\"([^>]*?)\"\s*class\=\"level\-1[^>]*?>[\w\W]*?\s*(
 						my $menu3_block=$2;
 						$menu_3=~s/\b([a-z]{1})/uc $1/ige;		
 						
-						#Menu-4
+						#Collection of Menu-4
 						while($menu3_block=~m/<a\s*href\=\"([^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>([^>]*?)<\/span>\s*<\/a>/igs)
 						{
 							my $menu4_url=$1;
@@ -134,16 +123,15 @@ while($content=~m/<a\s*href\=\"([^>]*?)\"\s*class\=\"level\-1[^>]*?>[\w\W]*?\s*(
 							}
 							my $menu4_content=$utilityobject->Lwp_Get($menu4_url);
 							
-							###while($menu4_content=~m/<a\s*class\=\"name\-link\"\s*href\=\"([^>]*?)\"\s*title\=\"/igs)
 							while($menu4_content=~m/<a\s*class\=\"name\-link\"\s*href\=\"([^>]*?)\"\s*title\=\"/igs)
 							{
 								my $product_url=$1;
 								$product_url=~s/\?[^>]*?$//igs;						
+								# Saving the product URL
 								my $product_object_key = $dbobject->SaveProduct($product_url,$robotname,$retailer_id,$Retailer_Random_String);
-							
+								# Writing the tags
 								$dbobject->SaveTag('Menu_1',$menu_1,$product_object_key,$robotname,$Retailer_Random_String) if($menu_1 ne '');
 								$dbobject->SaveTag('Menu_2',$menu11,$product_object_key,$robotname,$Retailer_Random_String) if($menu11 ne '');
-								#$dbobject->SaveTag('Menu_3',$menu11,$product_object_key,$robotname,$Retailer_Random_String);
 								$dbobject->SaveTag('Menu_3',$menu_22,$product_object_key,$robotname,$Retailer_Random_String) if($menu_22 ne '');
 								$dbobject->SaveTag($menu_3,$menu_4,$product_object_key,$robotname,$Retailer_Random_String) if($menu_4 ne '');	
 								
@@ -168,38 +156,33 @@ while($content=~m/<a\s*href\=\"([^>]*?)\"\s*class\=\"level\-1[^>]*?>[\w\W]*?\s*(
 					
 					$menu22_url=~s/\&amp\;/&/igs;
 					my $menu221_content=$utilityobject->Lwp_Get($menu22_url);
-					
+					# Collection of product URL
 					while($menu221_content=~m/<a\s*class\=\"name\-link\"\s*href\=\"([^>]*?)\"\s*title\=\"/igs)
 					{
 						my $product_url=$1;
 						$product_url=~s/\?[^>]*?$//igs;
-						
+						# Saving the product URL
 						my $product_object_key = $dbobject->SaveProduct($product_url,$robotname,$retailer_id,$Retailer_Random_String);
-						
+						# Writing the tags
 						$dbobject->SaveTag('Menu_1',$menu_1,$product_object_key,$robotname,$Retailer_Random_String) if($menu_1 ne '');
-						#$dbobject->SaveTag('Menu_2',$menu_2,$product_object_key,$robotname,$Retailer_Random_String);
 						$dbobject->SaveTag('Menu_2',$menu11,$product_object_key,$robotname,$Retailer_Random_String) if($menu11 ne '');
-						$dbobject->SaveTag('Menu_3',$menu_22,$product_object_key,$robotname,$Retailer_Random_String) if($menu_22 ne '');						
-						###$dbobject->SaveTag($menu_3,$menu_4,$product_object_key,$robotname,$Retailer_Random_String);	
-						
+						$dbobject->SaveTag('Menu_3',$menu_22,$product_object_key,$robotname,$Retailer_Random_String) if($menu_22 ne '');												
 						$dbobject->commit();			
 					}				
 				}
 				
 			}				
 		}
-		
+		# Navigation loop fdr MEN main menu
 	if(($menu_1=~m/\bmen\b/is)&&($flag==0))
 	{
-		print "In men Accessories\n";
-		##<STDIN>;
 		my $menu22_url='http://www.whistles.com/men/accessories/';
 		my $menu11='Accessories';
 		my $menu_22='';
 
 		my $menu22_content=$utilityobject->Lwp_Get($menu22_url);
 	
-		#Menu-3
+		#Collection of Menu 3
 		if($menu22_content=~m/<h3\s*class\=\"toggle\">\s*<span>\s*(Refine\s*by\s*Type|Type|Refine\s*by\s*Colour|Colour|by\s*product\s*type|by\s*colour|\s*Refine\s*by\s*category)\s*<\/span>([\w\W]*?)<\/div>/is)
 		{
 			while($menu22_content=~m/<h3\s*class\=\"toggle\">\s*<span>\s*(Refine\s*by\s*Type|Type|Refine\s*by\s*Colour|Colour|by\s*product\s*type|by\s*colour|\s*Refine\s*by\s*category)\s*<\/span>([\w\W]*?)<\/div>/igs)
@@ -208,7 +191,7 @@ while($content=~m/<a\s*href\=\"([^>]*?)\"\s*class\=\"level\-1[^>]*?>[\w\W]*?\s*(
 				my $menu3_block=$2;
 				$menu_3=~s/\b([a-z]{1})/uc $1/ige;		
 				
-				#Menu-4
+				#Collection of Menu-4
 				while($menu3_block=~m/<a\s*href\=\"([^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>([^>]*?)<\/span>\s*<\/a>/igs)
 				{
 					my $menu4_url=$1;
@@ -226,17 +209,16 @@ while($content=~m/<a\s*href\=\"([^>]*?)\"\s*class\=\"level\-1[^>]*?>[\w\W]*?\s*(
 						$menu4_url=$menu4_url.'?start=0&format=page-element&sz=60' ; # Url framed to get all the products listed in a single page
 					}
 					my $menu4_content=$utilityobject->Lwp_Get($menu4_url);
-					
-					###while($menu4_content=~m/<a\s*class\=\"name\-link\"\s*href\=\"([^>]*?)\"\s*title\=\"/igs)
+					# Collection of product URLS
 					while($menu4_content=~m/<a\s*class\=\"name\-link\"\s*href\=\"([^>]*?)\"\s*title\=\"/igs)
 					{
 						my $product_url=$1;
 						$product_url=~s/\?[^>]*?$//igs;						
+						# Saving the Product URL
 						my $product_object_key = $dbobject->SaveProduct($product_url,$robotname,$retailer_id,$Retailer_Random_String);
-					
+						# Writing the tags
 						$dbobject->SaveTag('Menu_1',$menu_1,$product_object_key,$robotname,$Retailer_Random_String) if($menu_1 ne '');
 						$dbobject->SaveTag('Menu_2',$menu11,$product_object_key,$robotname,$Retailer_Random_String) if($menu11 ne '');
-						#$dbobject->SaveTag('Menu_3',$menu11,$product_object_key,$robotname,$Retailer_Random_String);
 						$dbobject->SaveTag('Menu_3',$menu_22,$product_object_key,$robotname,$Retailer_Random_String) if($menu_22 ne '');
 						$dbobject->SaveTag($menu_3,$menu_4,$product_object_key,$robotname,$Retailer_Random_String) if($menu_4 ne '');	
 						
@@ -261,20 +243,17 @@ while($content=~m/<a\s*href\=\"([^>]*?)\"\s*class\=\"level\-1[^>]*?>[\w\W]*?\s*(
 			
 			$menu22_url=~s/\&amp\;/&/igs;
 			my $menu221_content=$utilityobject->Lwp_Get($menu22_url);
-			
+			# Collection of product URL
 			while($menu221_content=~m/<a\s*class\=\"name\-link\"\s*href\=\"([^>]*?)\"\s*title\=\"/igs)
 			{
 				my $product_url=$1;
 				$product_url=~s/\?[^>]*?$//igs;
-				
+				# Saving the Product URL
 				my $product_object_key = $dbobject->SaveProduct($product_url,$robotname,$retailer_id,$Retailer_Random_String);
-				
+				# Writing the tags
 				$dbobject->SaveTag('Menu_1',$menu_1,$product_object_key,$robotname,$Retailer_Random_String) if($menu_1 ne '');
-				#$dbobject->SaveTag('Menu_2',$menu_2,$product_object_key,$robotname,$Retailer_Random_String);
 				$dbobject->SaveTag('Menu_2',$menu11,$product_object_key,$robotname,$Retailer_Random_String) if($menu11 ne '');
-				$dbobject->SaveTag('Menu_3',$menu_22,$product_object_key,$robotname,$Retailer_Random_String) if($menu_22 ne '');						
-				###$dbobject->SaveTag($menu_3,$menu_4,$product_object_key,$robotname,$Retailer_Random_String);	
-				
+				$dbobject->SaveTag('Menu_3',$menu_22,$product_object_key,$robotname,$Retailer_Random_String) if($menu_22 ne '');										
 				$dbobject->commit();			
 			}				
 		}
@@ -283,8 +262,6 @@ while($content=~m/<a\s*href\=\"([^>]*?)\"\s*class\=\"level\-1[^>]*?>[\w\W]*?\s*(
 if($flag==0)
 {
 	$flag=1;
-	print "SS15 SHOW\n";
-	##<STDIN>;
 	goto SS15_Show;
 }
 

@@ -178,10 +178,10 @@ sub Chk_Footwear()    #Function definition to take footwear details.
 	my $menu1=shift;
 	
 	# Pattern match to check whether Menu2=>Footwear is available with category_home(doesn't have "category_home" in wep Page).
-	if($menu_1_link_contentFoot!~m/<li\s*class\s*\=\s*(?:\"|\')\s*category_home\s*(?:\"|\')\s*>\s*<a\s*class\s*\=\s*\"\s*\"\s*href\s*=\s*(?:\"|\')[^<]*?(?:\"|\')\s*title\s*\=\s*(?:\"|\')\s*Footwear\s*(?:\"|\')\s*[^>]*?>/is)
+	if($menu_1_link_contentFoot !~ m/<li\s*class\s*\=\s*(?:\"|\')\s*category_home\s*(?:\"|\')\s*>\s*<a\s*class\s*\=\s*\"\s*\"\s*href\s*=\s*(?:\"|\')[^<]*?(?:\"|\')\s*title\s*\=\s*(?:\"|\')\s*Footwear\s*(?:\"|\')\s*[^>]*?>/is)
 	{
 		# Pattern match to get footwear URL.
-		if($menu_1_link_contentFoot=~m/<li\s*class\s*\=\s*\"\s*\"\s*>\s*<a[^>]*?href\s*\=\s*\"([^>]*?)\s*\"[^>]*?>\s*(Footwear)\s*</is)
+		if($menu_1_link_contentFoot=~m/<li\s*class\s*\=\s*\"\s*\"\s*>\s*<a[^>]*?href\s*\=\s*\"([^>]*?)\s*\"[^>]*?>\s*(Shoes)\s*</is)
 		{
 			my $Foot_url=$1;
 			my $menu_2=$2;
@@ -209,6 +209,25 @@ sub Chk_Footwear()    #Function definition to take footwear details.
 					$category_url=~s/\,/%2C/igs;	
 					&get_Product($category_url,$menu1,$menu_2,'','',$category_head,$category); #Function call with arguments category URLs and their corresponding menus
 				}
+			}
+		}
+		elsif($menu_1_link_contentFoot=~m/<option\s*value\s*\=\s*\"\s*\"\s*disabled\s*selected>(?![^<]*?Sizes|[^<]*?Prices|[^<]*?Prices)([^<]*?)<([\w\W]*?)<\/li>/is)  ##To take categories under menus
+		{
+			my $category_head=$1;
+			my $category_block=$2;
+			$category_head =~s/Â//igs;
+			my $Foot_url;
+			$Foot_url = 'http://www.tedbaker.com/uk/Womens/Shoes/c/womens_shoes' if($menu1 =~ m/^women/is);
+			$Foot_url = 'http://www.tedbaker.com/uk/Mens/Shoes/c/mens_shoes' if($menu1 =~ m/^men/is);
+			# Pattern Match to get Sub Category URL from Each Category block(Eg.Boots).
+			while($category_block=~m/<option\s*value=\"([^>]*?)">([^>]*?)<\/option>/igs) 
+			{
+				my $category_url="$Foot_url"."?q="."$1";
+				my $category= $utilityobject->Trim($2);
+				$category =~s/Â//igs;
+				$category_url=~s/f\:/f%3A/igs;
+				$category_url=~s/\,/%2C/igs;	
+				&get_Product($category_url,$menu1,'Shoes','','',$category_head,$category); #Function call with arguments category URLs and their corresponding menus
 			}
 		}
 	}

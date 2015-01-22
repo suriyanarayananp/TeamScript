@@ -132,8 +132,7 @@ if($content100=~m/<div\s*class\s*\=\s*\"\s*nav\s*\-\s*container\s*\">\s*([\w\W]*
 								while($next_content=~m/<li>\s*<a\s*href=\s*[^>]*?\s*\">\s*([^>]*?)\s*</igs)
 								{
 									$ma++;
-								}
-							
+								}					
 							}
 
 							# Extracting the product URLs
@@ -218,7 +217,6 @@ if($content100=~m/<div\s*class\s*\=\s*\"\s*nav\s*\-\s*container\s*\">\s*([\w\W]*
 					{
 						$result="$url3"."?p=$ka&scrollCall=1";
 					}				
-					print"\nNext page is------------->$result\n";
 					
 					$content = $utilityobject->Lwp_Get($result);	
 					$ka++;	

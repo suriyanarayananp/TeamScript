@@ -1,4 +1,4 @@
-#!/opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl
+ï»¿#!/opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl
 # Module Initialization
 use strict;
 use LWP::UserAgent;
@@ -26,7 +26,6 @@ my $pid = $$;
 my $ip = `/sbin/ifconfig eth0 | grep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`;
 $ip = $1 if($ip =~ m/inet\s*addr\:([^>]*?)\s+/is);
 my $executionid = $ip.'_'.$pid;
-
 
 # User Agent
 my $ua = LWP::UserAgent->new(show_progress=>1);
@@ -471,7 +470,7 @@ sub Trim
 	$value1=~s/\&\#13\;\s*\-/*/igs;
 	$value1=~s/\&quot\;/"/igs;
 	$value1=~s/\&quot/"/igs;
-	$value1=~s/¡¯/'/igs;
+	$value1=~s/Â¡Â¯/'/igs;
 	$value1=~s/<[^>]*?>/ /igs;
 	$value1=~s/\s+/ /igs;
 	$value1=~s/^\s+|\s+$//igs;
@@ -479,4 +478,3 @@ sub Trim
 	utf8::decode($value1);
 	return($value1);	
 }
-

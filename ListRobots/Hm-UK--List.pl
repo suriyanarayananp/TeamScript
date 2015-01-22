@@ -83,8 +83,7 @@ while ( $content =~ m/<a[^>]*?href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<\/a>\s*<di
 	{
 		next; 
 	}
-
-	###if($menu1_Block =~ m/>\s*([^>]*?)\s*<\/strong><\/li>([\w\W]*?)<strong/is)  	
+	
 	while($menu1_Block =~ m/>\s*([^>]*?)\s*<\/strong><\/li>([\w\W]*?)<strong/igs)  		
 	{
 		my $menu11=$1;
@@ -171,6 +170,7 @@ while ( $content =~ m/<a[^>]*?href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<\/a>\s*<di
 					my $url4=$1;
 					my $menu21=$2;
 					my $subcont31 = $utilityobject->Lwp_Get($url4); 
+					
 					# Pattern match to take filter header name and it's block like "Colour /Size / Concepts" to filter Products.				
 					while($subcont31 =~ m/<div\s*class\=\"dimension[^>]*?data\-metricsName\=\"[^>]*?\">\s*<strong>\s*([^>]*?)\s*<\/strong>\s*(<ul>[\w\W]*?<\/ul>)\s*<\/div>/igs)
 					{

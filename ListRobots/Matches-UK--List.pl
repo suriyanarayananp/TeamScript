@@ -29,8 +29,7 @@ my $executionid = $ip.'_'.$pid;
 
 # User Agent
 my $ua = LWP::UserAgent->new(show_progress=>1);
-##$ua->agent("Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 (.NET CLR 3.5.30729)");
-$ua->agent('WGSN;+44 207 516 5099;datacollection@wgsn.com');
+$ua->agent("Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 (.NET CLR 3.5.30729)"); ## UPON MARTIN__WGSN APPROVAL
 $ua->timeout(30); 
 $ua->cookie_jar({});
 
@@ -108,6 +107,8 @@ while($content=~m/<h2>\s*<a\s*href\=\"([^>]*?)\"\s*class\=\"([^>]*?)\"\s*title\=
 		# Temporary Hardcoding the Menu1 if the Menu is Holiday shop to extract the menu 1 content block
 		$Menu1_text= 'STUDIOS' if($Menu1_text=~m/\s*HOLIDAY\s*SHOP\s*/is);	
 		$Menu1_text=~s/\s+/\\s*/igs;
+		
+		&filter_navigation($Menu1_url,$menu0,$Menu1,"","");
 		
 		# Extracting the Menu 1 content block 
 		if($content=~m/<\!\-\-\s*start\s*($Menu1_text)\s*\-\->([\w\W]*?)<\!\-\-\s*end\s*($Menu1_text)\s*\-\->/is)
@@ -414,7 +415,7 @@ while($content=~m/<h2>\s*<a\s*href\=\"([^>]*?)\"\s*class\=\"([^>]*?)\"\s*title\=
 					# Calling the subroutine for filter navigations		
 					&filter_navigation($Menu_url,$menu0,$Menu1,"","");
 				}
-			}
+			}			
 		}
 	}
 }
@@ -627,8 +628,7 @@ sub go_product
 			# Framing of the URL
 			unless($product_url=~m/^\s*http\:/is)
 			{
-				$product_url='http://www.matchesfashion.com'.$product_url;
-				
+				$product_url='http://www.matchesfashion.com'.$product_url;		
 			}
 			
 			# Collection of the product URL
