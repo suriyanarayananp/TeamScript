@@ -102,7 +102,7 @@ while($source_page =~ m/\"[^<]*?(?:(Whats_New|Clothing\"\:|Bags\"\:|Shoes\"\:|Ac
 			if($menu_3_page =~ m/<li\s*class\=\"\s*selected\s*\">/is)
 			{
 				my $flag = 0;
-				while($menu_3_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"\?([^>]*?(?:(colour|designer))Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
+				while($menu_3_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"\?([^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
 				{
 					my $append_url = $1;
 					my $filter_name = $utilityobject->Trim($2); # Colour.
@@ -113,7 +113,7 @@ while($source_page =~ m/\"[^<]*?(?:(Whats_New|Clothing\"\:|Bags\"\:|Shoes\"\:|Ac
 						$append_url = $1 if($append_url =~ m/^([^>]*?)\&level\d+Filter\=[^>]*?$/is);
 					}
 					my $filter_url = $menu_3_url.'&'.$append_url;
-					$filter_url =~ s/^([^>]*?)\?((?:colour|designer)Filter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;
+					$filter_url =~ s/^([^>]*?)\?(colourFilter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;
 					$filter_url = $filter_url.'&npp=view_all' unless($filter_url=~m/npp\=/is);					
 					$filter_url =~ s/\/Shop\//\/gb\/en\/Shop\//igs if($filter_url !~ m/gb\/en/is);
 					my $filter_page = $utilityobject->Lwp_Get($filter_url);
@@ -123,7 +123,7 @@ while($source_page =~ m/\"[^<]*?(?:(Whats_New|Clothing\"\:|Bags\"\:|Shoes\"\:|Ac
 
 				if($flag == 0)
 				{
-					while($menu_3_page =~ m/<a\s*class\=\"filter\-item\"\s*href\=\"([^>]*?(?:(colour|designer))Filter\=[^\"]*?)\"\s*title\=\"[^\"]*?\">\s*<span\s*class\=\"filter\-checkbox\">\s*<\/span>\s*<span\s*class\=\"filter\-name\">([^<]*?)<\/span>/igs)
+					while($menu_3_page =~ m/<a\s*class\=\"filter\-item\"\s*href\=\"([^>]*?(colour)Filter\=[^\"]*?)\"\s*title\=\"[^\"]*?\">\s*<span\s*class\=\"filter\-checkbox\">\s*<\/span>\s*<span\s*class\=\"filter\-name\">([^<]*?)<\/span>/igs)
 					{
 						my $append_url = $1;
 						my $filter_name = $utilityobject->Trim($2); # Colour.
@@ -152,13 +152,13 @@ while($source_page =~ m/\"[^<]*?(?:(Whats_New|Clothing\"\:|Bags\"\:|Shoes\"\:|Ac
 						my $sub_category = $2; # Dresses & separates.
 						my $sub_category_page = $utilityobject->Lwp_Get($sub_category_url);
 						
-						while($sub_category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(?:(colour|designer))Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
+						while($sub_category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
 						{
 							my $filter_url = $sub_category_url.$1;
 							my $filter_name = $utilityobject->Trim($2); # Colour.
 							my $filter_value = $utilityobject->Trim($3); # White.
-							$filter_url = $1.$2 if($filter_url=~m/([^>]*?)\?SelItem\=\d+(?:\;\d+)?(\&(?:colour|designer)Filter\=[^>]*?)\&[^>]*?$/is);
-							$filter_url = $1.$2 if($filter_url=~m/([^>]*?)\?SelItem\=\d+(?:\;\d+)?\&[^>]*?(\&(?:colour|designer)Filter\=[^>]*?)$/is);
+							$filter_url = $1.$2 if($filter_url=~m/([^>]*?)\?SelItem\=\d+(?:\;\d+)?(\&colourFilter\=[^>]*?)\&[^>]*?$/is);
+							$filter_url = $1.$2 if($filter_url=~m/([^>]*?)\?SelItem\=\d+(?:\;\d+)?\&[^>]*?(\&colourFilter\=[^>]*?)$/is);
 							$filter_url =~ s/\&npp\=60/\&npp\=view_all/igs;
 							$filter_url = $filter_url.'&npp=view_all' unless($filter_url=~m/npp\=/is);
 							$filter_url =~ s/\/Shop\//\/gb\/en\/Shop\//igs if($filter_url !~ m/gb\/en/is);
@@ -175,7 +175,7 @@ while($source_page =~ m/\"[^<]*?(?:(Whats_New|Clothing\"\:|Bags\"\:|Shoes\"\:|Ac
 					my $category = $2; # Mother of bride.
 					my $category_page = $utilityobject->Lwp_Get($category_url);
 					
-					while($category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(?:(colour|designer))Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
+					while($category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
 					{
 						my $filter_url = $category_url.$1;
 						my $filter_name = $utilityobject->Trim($2); # Colour.
@@ -213,12 +213,12 @@ while($source_page =~ m/\"[^<]*?(?:(Whats_New|Clothing\"\:|Bags\"\:|Shoes\"\:|Ac
 									my $sub_category = $utilityobject->Trim($2); # DD plus bra.
 									my $sub_category_page = $utilityobject->Lwp_Get($sub_category_url);
 									
-									while($sub_category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(?:(colour|designer))Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
+									while($sub_category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
 									{
 										my $filter_url = $sub_category_url.$1;
 										my $filter_name = $utilityobject->Trim($2); # Colour
 										my $filter_value = $utilityobject->Trim($3); # White.
-										$filter_url =~ s/^([^>]*?)\?((?:colour|designer)Filter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;
+										$filter_url =~ s/^([^>]*?)\?(colourFilter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;
 										$filter_url =~ s/\&npp\=60/\&npp\=view_all/igs;
 										$filter_url = $filter_url.'&npp=view_all' unless($filter_url =~ m/npp\=/is);
 										$filter_url =~ s/\/Shop\//\/gb\/en\/Shop\//igs if($filter_url !~ m/gb\/en/is);
@@ -229,12 +229,12 @@ while($source_page =~ m/\"[^<]*?(?:(Whats_New|Clothing\"\:|Bags\"\:|Shoes\"\:|Ac
 							}
 							else # Navigation: what's new -> shop by -> this week -> clothing.
 							{
-								while($category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(?:(colour|designer))Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
+								while($category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
 								{
 									my $filter_url = $category_url.$1;
 									my $filter_name = $utilityobject->Trim($2); # Colour.
 									my $filter_value = $utilityobject->Trim($3); # White.
-									$filter_url =~ s/^([^>]*?)\?((?:colour|designer)Filter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;
+									$filter_url =~ s/^([^>]*?)\?(colourFilter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;
 									$filter_url =~ s/\&npp\=60/\&npp\=view_all/igs;
 									$filter_url = $filter_url.'&npp=view_all' unless($filter_url =~ m/npp\=/is);
 									$filter_url =~ s/\/Shop\//\/gb\/en\/Shop\//igs if($filter_url !~ m/gb\/en/is);
@@ -264,12 +264,12 @@ while($source_page =~ m/\"[^<]*?(?:(Whats_New|Clothing\"\:|Bags\"\:|Shoes\"\:|Ac
 									$sub_category_url = $category_url.'?'.$sub_category_url unless($sub_category_url=~m/^http/is);
 									my $sub_category_page = $utilityobject->Lwp_Get($sub_category_url);
 									
-									while($sub_category_page =~ m/<a\s*class\=\"filter\-item\"\s*href\=\"([^>]*?(?:(colour|designer))Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span[^>]*?>\s*[^>]*?\s*<\/span>\s*(?:<[^>]*?>)\s*<span[^>]*?>\s*([^>]*?)\s*<\/span>/igs)
+									while($sub_category_page =~ m/<a\s*class\=\"filter\-item\"\s*href\=\"([^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span[^>]*?>\s*[^>]*?\s*<\/span>\s*(?:<[^>]*?>)\s*<span[^>]*?>\s*([^>]*?)\s*<\/span>/igs)
 									{
 										my $filter_url = $home_url.$1;
 										my $filter_name = $utilityobject->Trim($2); # Colour.
 										my $filter_value = $utilityobject->Trim($3); # White.
-										$filter_url =~ s/^([^>]*?)\?((?:colour|designer)Filter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;
+										$filter_url =~ s/^([^>]*?)\?(colourFilter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;
 										$filter_url =~ s/\&npp\=60/\&npp\=view_all/igs;
 										$filter_url = $filter_url.'&npp=view_all' unless($filter_url=~m/npp\=/is);
 										$filter_url =~ s/\/Shop\//\/gb\/en\/Shop\//igs if($filter_url !~ m/gb\/en/is);
@@ -280,12 +280,12 @@ while($source_page =~ m/\"[^<]*?(?:(Whats_New|Clothing\"\:|Bags\"\:|Shoes\"\:|Ac
 							}
 							else # Navigation: what's new -> shop by -> this week -> clothing.
 							{
-								while($category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(?:(colour|designer))Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
+								while($category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
 								{
 									my $filter_url = $category_url.$1;
 									my $filter_name = $utilityobject->Trim($2); # Colour.
 									my $filter_value = $utilityobject->Trim($3); # White.
-									$filter_url =~ s/^([^>]*?)\?((?:colour|designer)Filter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;
+									$filter_url =~ s/^([^>]*?)\?(colourFilter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;
 									$filter_url =~ s/\&npp\=60/\&npp\=view_all/igs;
 									$filter_url = $filter_url.'&npp=view_all' unless($filter_url =~ m/npp\=/is);
 									$filter_url =~ s/\/Shop\//\/gb\/en\/Shop\//igs if($filter_url !~ m/gb\/en/is);
@@ -310,12 +310,12 @@ while($source_page =~ m/\"[^<]*?(?:(Whats_New|Clothing\"\:|Bags\"\:|Shoes\"\:|Ac
 								$sub_category_url = $home_url.$sub_category_url unless($sub_category_url =~ m/^http/is);							
 								my $sub_category_page = $utilityobject->Lwp_Get($sub_category_url);
 								
-								while($sub_category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"\?([^>]*?(?:(colour|designer))Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
+								while($sub_category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"\?([^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
 								{
 									my $filter_url = $sub_category_url.'&'.$1;
 									my $filter_name = $utilityobject->Trim($2); # Colour.
 									my $filter_value = $utilityobject->Trim($3); # White.
-									$filter_url =~ s/^([^>]*?)\&((?:colour|designer)Filter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;
+									$filter_url =~ s/^([^>]*?)\&(colourFilter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;
 									$filter_url =~ s/\&npp\=60/\&npp\=view_all/igs;
 									$filter_url = $filter_url.'&npp=view_all' unless($filter_url =~ m/npp\=/is);	
 									$filter_url =~ s/\/Shop\//\/gb\/en\/Shop\//igs if($filter_url !~ m/gb\/en/is);
@@ -326,12 +326,12 @@ while($source_page =~ m/\"[^<]*?(?:(Whats_New|Clothing\"\:|Bags\"\:|Shoes\"\:|Ac
 							}
 							if($flag == 0)
 							{
-								while($category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(?:(colour|designer))Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
+								while($category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"(\?[^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
 								{
 									my $filter_url = $category_url.$1;
 									my $filter_name = $utilityobject->Trim($2); # Colour.
 									my $filter_value = $utilityobject->Trim($3); # White.
-									$filter_url =~ s/^([^>]*?)\?((?:colour|designer)Filter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;
+									$filter_url =~ s/^([^>]*?)\?(colourFilter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;
 									$filter_url =~ s/\&npp\=60/\&npp\=view_all/igs;
 									$filter_url = $filter_url.'&npp=view_all' unless($filter_url =~ m/npp\=/is);
 									$filter_url =~ s/\/Shop\//\/gb\/en\/Shop\//igs if($filter_url !~ m/gb\/en/is);
@@ -351,13 +351,14 @@ while($source_page =~ m/\"[^<]*?(?:(Whats_New|Clothing\"\:|Bags\"\:|Shoes\"\:|Ac
 						my $sub_category = $utilityobject->Trim($2); # Denim.
 						my $sub_category_page = $utilityobject->Lwp_Get($sub_category_url);
 						
-						while($sub_category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"\?([^>]*?(?:(colour|designer))Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
+						while($sub_category_page =~ m/<a\s*class\=\"filter_name\"\s*href\=\"\?([^>]*?(colour)Filter\=[^>]*?)\"\s*title\=\"[^>]*?\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
 						{
 							my $filter_url = $sub_category_url.'&'.$1;
 							my $filter_name = $utilityobject->Trim($2); # Colour.
 							my $filter_value = $utilityobject->Trim($3); # Blue.
 
-							$filter_url =~ s/^([^>]*?)\&((?:colour|designer)Filter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;							
+							$filter_url =~ s/^([^>]*?)\&(colourFilter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;
+							$filter_url =~ s/^([^>]*?)\?(colourFilter\=[^>]*?)\&[^>]*?$/$1\&$2/igs;
 							$filter_url =~ s/\&npp\=60/\&npp\=view_all/igs;
 							$filter_url = $filter_url.'&npp=view_all' unless($filter_url =~ m/npp\=/is);
 							$filter_url =~ s/\/Shop\//\/gb\/en\/Shop\//igs if($filter_url !~ m/gb\/en/is);
@@ -397,7 +398,7 @@ if($source_page =~ m/(Sale)\s*top\s*nav\"\:\"\\n\\n\\n\s*<\!\-\-\s*dropdown\s*co
 						$menu_4_url = $home_url.$menu_4_url unless($menu_4_url =~ m/^http/is);
 						my $menu_4_page = $utilityobject->Lwp_Get($menu_4_url);
 						
-						while($menu_4_page=~m/<a\s*class\=\"filter\-item\"\s*href\=\"([^>]*?(?:(colour|designer))Filter\=[^\"]*?)\"\s*title\=\"[^\"]*?\">\s*<span\s*class\=\"filter\-checkbox\">\s*<\/span>\s*<span\s*class\=\"filter\-name\">([^<]*?)<\/span>/igs)
+						while($menu_4_page=~m/<a\s*class\=\"filter\-item\"\s*href\=\"([^>]*?(colour)Filter\=[^\"]*?)\"\s*title\=\"[^\"]*?\">\s*<span\s*class\=\"filter\-checkbox\">\s*<\/span>\s*<span\s*class\=\"filter\-name\">([^<]*?)<\/span>/igs)
 						{
 							my $append_url = $1.'&npp=view_all';
 							my $filter_name = $utilityobject->Trim($2); # Colour.
@@ -420,7 +421,7 @@ if($source_page =~ m/(Sale)\s*top\s*nav\"\:\"\\n\\n\\n\s*<\!\-\-\s*dropdown\s*co
 				}
 			}
 			else{
-				while($menu_3_page =~ m/<a\s*class\=\"filter\-item\"\s*href\=\"([^>]*?(?:(colour|designer))Filter\=[^\"]*?)\"\s*title\=\"[^\"]*?\">\s*<span\s*class\=\"filter\-checkbox\">\s*<\/span>\s*<span\s*class\=\"filter\-name\">([^<]*?)<\/span>/igs)
+				while($menu_3_page =~ m/<a\s*class\=\"filter\-item\"\s*href\=\"([^>]*?(colour)Filter\=[^\"]*?)\"\s*title\=\"[^\"]*?\">\s*<span\s*class\=\"filter\-checkbox\">\s*<\/span>\s*<span\s*class\=\"filter\-name\">([^<]*?)<\/span>/igs)
 				{
 					my $append_url = $1.'&npp=view_all';
 					my $filter_name = $utilityobject->Trim($2); # Colour.

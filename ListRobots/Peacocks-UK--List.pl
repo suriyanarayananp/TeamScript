@@ -71,13 +71,13 @@ my $home_url = 'http://www.peacocks.co.uk';
 my $source_page = $utilityobject->Lwp_Get($home_url);
 
 # Pattern matches top menus, excluding "Trends".
-while($source_page =~ m/<a\s*href\=\"[^>]*?\"\s*class\=\"[^<]*?level\-top[^<]*?\"\s*>\s*([^>]*?)\s*<\/a>\s*([\w\W]*?)\s*<li\s*class\=\"heart\">/igs)
+while($source_page =~ m/<a\s*href\=\"[^>]*?\"\s*class\=\"[^<]*?level\-top[^<]*?\"\s*>\s*((?!New)[^>]*?)\s*<\/a>\s*([\w\W]*?)\s*<li\s*class\=\"heart\">/igs)
 {
 	my $top_menu = $utilityobject->Trim($1); # Top menu is stored. For example - Womens.
 	my $top_menu_block = $2;
 
-	# Entry for top menus, "New in" and "Sale".
-	if($top_menu =~ m/New\s*in|Sale/is)		
+	# Entry for top menus, "Sale".
+	if($top_menu =~ m/Sale/is)
 	{
 		while($top_menu_block =~ m/<a\s*href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<\/a>/igs)
 		{
@@ -93,7 +93,8 @@ while($source_page =~ m/<a\s*href\=\"[^>]*?\"\s*class\=\"[^<]*?level\-top[^<]*?\
 			$no_filter_url = $1.'/where/limit/all'.$2 if($no_filter_url=~m/([^>]*?)(\.html)/is);
 			my $no_filter_page = $utilityobject->Lwp_Get($no_filter_url); # Page shows full products for the categories without applying filters like colour.
 			&Product_Insert($no_filter_page,$top_menu,$menu_2); # Transports product_url, top_menu and menu_2 to product_insert module for inserting tags into db (navigation example : menu_1(new in) -> menu_2(new womens)).
-			undef $no_filter_page;			
+			undef $no_filter_page;
+			
 			my $menu_2_page = $utilityobject->Lwp_Get($menu_2_url);
 			
 			# Fetching filter blocks excluding size, price, offer and gender.			
@@ -114,45 +115,10 @@ while($source_page =~ m/<a\s*href\=\"[^>]*?\"\s*class\=\"[^<]*?level\-top[^<]*?\
 				}
 			}
 		}		
-	}
-	elsif($top_menu =~ m/^SWEATER/is) # Entry for top menu : sweater shop
-	{
-		my $url = 'http://www.peacocks.co.uk/sweater-shop';
-		my $page = $utilityobject->Lwp_Get($url);
-		
-		my %hash_url;
-		while($page =~ m/href\=\"(http\:\/\/www\.peacocks\.co\.uk\/(?:(womens|boys|girls))?\/shop\-collections\/[^\"]*?)\"/igs)
-		{
-			my $menu_2_url = $1;
-			my $menu_2 = $2.' '.'sweater';
-			
-			if($hash_url{$menu_2_url} eq '')
-			{
-				$hash_url{$menu_2_url} = $menu_2_url;
-				my $menu_2_page = $utilityobject->Lwp_Get($menu_2_url);
-				
-				while($menu_2_page =~ m/filter\-title\-\-[^\"]*?\">\s*((?!price|size|offer|gender)[^<]*?)\s*<([\w\W]*?)<\/ol>\s*<\/dd>/igs)
-				{
-					my $filter = $utilityobject->Trim($1); # Colour
-					my $filter_block = $2;
-
-					# Extracting filter values from each filter block.
-					while($filter_block =~ m/<a[^>]*?href\=\"([^\"]*?)\"[^>]*?>\s*([^<]*?)\s*</igs)
-					{
-						my $filter_url = $1;
-						my $filter_value = $utilityobject->Trim($2); # Black.
-						
-						$filter_url =~ s/where/where\/limit\/all/igs if($filter_url!~m/where\/limit\/all/is);
-						my $filter_page = $utilityobject->Lwp_Get($filter_url); # Page shows full products after applying filters.
-						&Product_Insert($filter_page,$top_menu,$menu_2,'',$filter,$filter_value); # Transports product_url, top_menu and menu_2 to product_insert module for inserting tags into db (navigation example : menu_1(new in) -> menu_2(shop department) -> menu_3(dresses) -> (colour) -> (black)).
-					}					
-				}
-			}			
-		}
-	}
+	}	
 	else # Entry for top menus : womens, mens, boys and girls.
 	{
-		while($top_menu_block =~ m/<li\s*class\=\"[^<]*?parent\">\s*<a[^<]*?href\=\"[^\"]*?\"[^>]*?>\s*([^<]*?)\s*<\/a>\s*([\w\W]*?)<\/ul>\s*<\/li>/igs)
+		while($top_menu_block =~ m/<li\s*class\=\"[^<]*?parent\">\s*<a[^<]*?href\=\"[^\"]*?\"[^>]*?>\s*((?!shop\s*collection)[^<]*?)\s*<\/a>\s*([\w\W]*?)<\/ul>\s*<\/li>/igs)
 		{
 			my $menu_2 = $utilityobject->Trim($1); # Shop department.
 			my $menu_2_block = $2;
@@ -172,22 +138,45 @@ while($source_page =~ m/<a\s*href\=\"[^>]*?\"\s*class\=\"[^<]*?level\-top[^<]*?\
 				
 				my $menu_3_page = $utilityobject->Lwp_Get($menu_3_url);
 				
-				# Fetching filter blocks excluding size, price, offer and gender.
-				while($menu_3_page =~ m/filter\-title\-\-[^\"]*?\">\s*((?!price|size|offer|gender)[^<]*?)\s*<([\w\W]*?)<\/ol>\s*<\/dd>/igs)
+				# If sub category is selected, navigate through other categories such as sleeve length, height etc., (Skip Sub category navigation).
+				if($menu_3_page =~ m/<li\s*class\=\"selected\">/is)
 				{
-					my $filter = $utilityobject->Trim($1); # Colour
-					my $filter_block = $2;
-					
-					# Extracting filter values from each filter block.
-					while($filter_block =~ m/<a[^>]*?href\=\"([^\"]*?)\"[^>]*?>\s*([^<]*?)\s*</igs)
+					while($menu_3_page =~ m/filter\-title\-\-[^\"]*?\">\s*((?!price|size|offer|gender|sub\s*category)[^<]*?)\s*<([\w\W]*?)<\/ol>\s*<\/dd>/igs)
 					{
-						my $filter_url = $1;
-						my $filter_value = $utilityobject->Trim($2); # Black.
+						my $filter = $utilityobject->Trim($1); # Colour
+						my $filter_block = $2;
 						
-						$filter_url =~ s/where/where\/limit\/all/igs if($filter_url!~m/where\/limit\/all/is);
-						my $filter_page = $utilityobject->Lwp_Get($filter_url); # Page shows full products after applying filters.
-						&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,$filter,$filter_value); # Transports product_url, top_menu and menu_2 to product_insert module for inserting tags into db (navigation example : menu_1(new in) -> menu_2(shop department) -> menu_3(dresses) -> (colour) -> (black)).
-					}					
+						# Extracting filter values from each filter block.
+						while($filter_block =~ m/<a[^>]*?href\=\"([^\"]*?)\"[^>]*?>\s*([^<]*?)\s*</igs)
+						{
+							my $filter_url = $1;
+							my $filter_value = $utilityobject->Trim($2); # Black.
+							
+							$filter_url =~ s/where/where\/limit\/all/igs if($filter_url!~m/where\/limit\/all/is);
+							my $filter_page = $utilityobject->Lwp_Get($filter_url); # Page shows full products after applying filters.
+							&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,$filter,$filter_value); # Transports product_url, top_menu and menu_2 to product_insert module for inserting tags into db (navigation example : menu_1(new in) -> menu_2(shop department) -> menu_3(dresses) -> (colour) -> (black)).
+						}
+					}
+				}
+				else
+				{
+					# Fetching filter blocks excluding size, price, offer and gender.
+					while($menu_3_page =~ m/filter\-title\-\-[^\"]*?\">\s*((?!price|size|offer|gender)[^<]*?)\s*<([\w\W]*?)<\/ol>\s*<\/dd>/igs)
+					{
+						my $filter = $utilityobject->Trim($1); # Colour
+						my $filter_block = $2;
+						
+						# Extracting filter values from each filter block.
+						while($filter_block =~ m/<a[^>]*?href\=\"([^\"]*?)\"[^>]*?>\s*([^<]*?)\s*</igs)
+						{
+							my $filter_url = $1;
+							my $filter_value = $utilityobject->Trim($2); # Black.
+							
+							$filter_url =~ s/where/where\/limit\/all/igs if($filter_url!~m/where\/limit\/all/is);
+							my $filter_page = $utilityobject->Lwp_Get($filter_url); # Page shows full products after applying filters.
+							&Product_Insert($filter_page,$top_menu,$menu_2,$menu_3,$filter,$filter_value); # Transports product_url, top_menu and menu_2 to product_insert module for inserting tags into db (navigation example : menu_1(new in) -> menu_2(shop department) -> menu_3(dresses) -> (colour) -> (black)).
+						}
+					}
 				}
 			}			
 		}
