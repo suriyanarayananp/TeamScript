@@ -1,17 +1,19 @@
 #!/opt/home/merit/perl5/perlbrew/perls/perl-5.14.4/bin/perl
-###### Module Initialization ##############
-# use strict;
+# Module Initialization.
+use strict;
 use LWP::UserAgent;
-use HTML::Entities;
-use URI::URL;
-use HTTP::Cookies;
-use DBI;
-use DateTime;
-# require "/opt/home/merit/Merit_Robots/DBIL.pm"; # USER DEFINED MODULE DBIL.PM
-require "/opt/home/merit/Merit_Robots/DBILv2/DBIL.pm"; # USER DEFINED MODULE DBIL.PM
-###########################################
+use Log::Syslog::Fast ':all';
+use Net::Domain qw(hostname);
+use Config::Tiny;
 
-#### Variable Initialization ##############
+# Package Initialization.
+require "/opt/home/merit/Merit_Robots/anorak-worker/AnorakDB.pm";
+require "/opt/home/merit/Merit_Robots/anorak-worker/AnorakUtility.pm";
+
+# Location of the config file with all settings.
+my $ini_file = '/opt/home/merit/Merit_Robots/anorak-worker/anorak-worker.ini';
+
+# Variable Initialization.
 my $robotname = $0;
 $robotname =~ s/\.pl//igs;
 $robotname =$1 if($robotname =~ m/[^>]*?\/*([^\/]+?)\s*$/is);
@@ -22,64 +24,66 @@ my $Retailer_Random_String='Zal';
 my $pid = $$;
 my $ip = `/sbin/ifconfig eth0 | grep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`;
 $ip = $1 if($ip =~ m/inet\s*addr\:([^>]*?)\s+/is);
-my $excuetionid = $ip.'_'.$pid;
-###########################################
+my $executionid = $ip.'_'.$pid;
+my %totalHash;
 
-############ Proxy Initialization #########
-my $country = $1 if($robotname =~ m/\-([A-Z]{2})\-\-/is);
-# DBIL::ProxyConfig($country);
-$ENV{HTTP_proxy} = 'http://frawspcpx.cloud.trendinglines.co.uk:3129';
-###########################################
-
-##########User Agent######################
-my $ua=LWP::UserAgent->new(show_progress=>1);
+# Setting the UserAgent.
+my $ua = LWP::UserAgent->new(show_progress=>1);
 $ua->agent("Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 (.NET CLR 3.5.30729)");
 $ua->timeout(30); 
 $ua->cookie_jar({});
-$ua->env_proxy;
-###########################################
 
-############Cookie File Creation###########
-my ($cookie_file,$retailer_file) = DBIL::LogPath($robotname);
-my $cookie = HTTP::Cookies->new(file=>$cookie_file,autosave=>1); 
-$ua->cookie_jar($cookie);
-###########################################
+# Read the settings from the config file.
+my $ini = Config::Tiny->new;
+$ini = Config::Tiny->read($ini_file);
+if (!defined $ini) 
+{
+	# Die if reading the settings failed.
+	die "FATAL: ", Config::Tiny->errstr;
+}
 
-# ############Database Initialization########
-my $dbh = DBIL::DbConnection();
-# my $mqh = DBIL::MqConnection();
-# ###########################################
- 
-my $select_query = "select ObjectKey from Retailer where name=\'$retailer_name\'";
-my $retailer_id = DBIL::Objectkey_Checking($select_query,$dbh,$robotname);
+# Setup logging to syslog.
+my $logger = Log::Syslog::Fast->new(LOG_UDP, $ini->{logs}->{server}, $ini->{logs}->{port}, LOG_LOCAL3, LOG_INFO, $ip,'aw-'. $pid . '@' . $ip );
 
-#################### For Dashboard #######################################
-DBIL::Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'START',$robotname);
-#################### For Dashboard #######################################
+# Connect to AnorakDB Package.
+my $dbobject = AnorakDB->new($logger,$executionid);
+$dbobject->connect($ini->{mysql}->{host}, $ini->{mysql}->{port}, $ini->{mysql}->{name}, $ini->{mysql}->{user}, $ini->{mysql}->{pass});
 
+# Connect to Utility package.
+my $utilityobject = AnorakUtility->new($logger,$ua);
+
+# Getting Retailer_id and Proxystring.
+my ($retailer_id,$ProxySetting) = $dbobject->GetRetailerProxy($retailer_name);
+$dbobject->RetailerUpdate($retailer_id,$robotname,'start');
+
+# Setting the Environment Variables.
+$utilityobject->SetEnv($ProxySetting);
+
+# To indicate script has started in dashboard. 
+$dbobject->Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'START',$robotname);
+
+# Once script has started send a msg to logger.
+$logger->send("$robotname :: Instance Started :: $pid\n");
 ############ URL Collection ##############   
-my $content = &lwp_get("http://www.zalando.co.uk/"); 
-   $content = &lwp_get($ARGV[0]); 
+my $content = $utilityobject->Lwp_Get("https://www.zalando.co.uk/"); 
+   $content = $utilityobject->Lwp_Get($ARGV[0]); 
 my $menu1 = $ARGV[1];
 my $menu2 = $ARGV[2];
 my $menu3 = $ARGV[3];
 my $menu4 = $ARGV[4];
 if(@ARGV == 5)
 {
-	print "Arg is >=5 \n";
 	while($content =~ m/class\=\"fLabel\"\s*[^>]*?>\s*([^>]*?)\s*<\/span>([\w\W]*?)value\=\"(?:close|Apply)\"[^>]*?>\s*(?:<\/form>\s*)?<\/div>\s*<\/div>/igs)
 	{
-		my $menu5 = &clean($1);
+		my $menu5 = $utilityobject->Trim($1);
 		my $cont5 = $2;
 		next if($menu5 =~ m/Category|More\s*categories|Size|Price|You\s*might\s*also\s*like\s*|Free\s*Delivery|Brand/is);
-		# next unless($menu4 =~ m/colour/is);
-		print "Menu => $menu1 -> $menu2 -> $menu3 -> $menu4 -> $menu5\n";
 		while($cont5 =~ m/href\=\"([^>]*?)\"[^>]*?title\=\"([^>]*?)\">|href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<|value\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*</igs)
 		{
 			my $catlink5 = $1.$3.$5;
-			my $menu6 = &clean($2.$4.$6);
-			$catlink5 = "http://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
-			my $cont6 = &lwp_get($catlink5); 
+			my $menu6 = $utilityobject->Trim($2.$4.$6);
+			$catlink5 = "https://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
+			my $cont6 = $utilityobject->Lwp_Get($catlink5); 
 			&collect_product($menu1,$menu2,$menu3,$menu4,'',$menu5,$menu6,$cont6);
 		}
 	}
@@ -87,75 +91,57 @@ if(@ARGV == 5)
 }
 elsif($content =~ m/class\=\"parentCat\">\s*<span\s*class\=\"isActive\s*[^>]*?>\s*(?:<b>\s*<\/b>)?\s*([^>]*?)\s*<([\w\W]*?)<\/li>\s*<\/ul>\s*<\/li>/is)
 {
-	my $menu3  = &clean($1);
+	my $menu3  = $utilityobject->Trim($1);
 	my $cont2_sub = $2;
 	while($cont2_sub =~ m/href\=\"([^>]*?)\"[^>]*?>\s*(?:<b>\s*<\/b>\s*)?([^>]*?)\s*</igs)
 	{
 		my $catlink3 = $1;
-		my $menu4 = &clean($2); #Menu3 -> Bra
-		# print "Menu4 ==> $menu4\n";
-		# next if($menu4 !~ m/Coats/is);
-		$catlink3 = "http://www.zalando.co.uk/".$catlink3 unless($catlink3 =~ m/^http/is);
-		print "$menu3->$menu4\n";
-		my $subcontent = lwp_get($catlink3); 
-		if($subcontent =~ m/class\=\"parentCat\">\s*<span\s*class\=\"isActive\s*iconSprite\">\s*([^>]*?)\s*<([\w\W]*?)<\/li>\s*<\/ul>\s*<\/li>/is)
+		my $menu4 = $utilityobject->Trim($2); #Menu4 -> Bra  {Swimming Trunks}
+		$catlink3 = "https://www.zalando.co.uk/".$catlink3 unless($catlink3 =~ m/^http/is);
+		my $subcontent = $utilityobject->Lwp_Get($catlink3);
+		if($subcontent =~ m/class\=\"parentCat\">\s*<span\s*class\=\"isActive\s*[^>]*?>\s*(?:<b>\s*<\/b>)?\s*([^>]*?)\s*<([\w\W]*?)<\/li>\s*<\/ul>\s*<\/li>/is)
 		{
-			# print "i'm here\n";
-			my $menu4  = &clean($1);
+			my $menu4  = $utilityobject->Trim($1); #Menu4 -> Bra  {Swimming Trunks}
 			my $cont3_sub = $2;
-			while($cont3_sub =~ m/href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*</igs)
+			while($cont3_sub =~ m/href\=\"([^>]*?)\"[^>]*?>\s*(?:<b>\s*<\/b>\s*)?([^>]*?)\s*</igs)
 			{
 				my $catlink4 = $1;
-				my $menu5 = &clean($2); #Menu5 -> Balcontee Bar
-				print "Menu5 => $menu5\n";
-				# next if($menu5 !~ m/Down\s*Coats/is);
-				$catlink4 = "http://www.zalando.co.uk/".$catlink4 unless($catlink4 =~ m/^http/is);
-				my $cont4 = lwp_get($catlink4); 
-				while($cont4 =~ m/<div\s*class\=\"filter\">\s*<div\s*class\=\"title\">\s*<label>\s*([^>]*?)\s*<\/label>\s*<\/div>([\w\W]*?)<\/div>/igs)
+				my $menu5 = $utilityobject->Trim($2); #Menu5 -> Balcontee  {Tunks/Shorts}
+				$catlink4 = "https://www.zalando.co.uk/".$catlink4 unless($catlink4 =~ m/^http/is);
+				my $cont4 = $utilityobject->Lwp_Get($catlink4);
+				while($cont4 =~ m/class\=\"fLabel\"\s*[^>]*?>\s*([^>]*?)\s*<\/span>([\w\W]*?)value\=\"(?:close|Apply)\"[^>]*?>\s*(?:<\/form>\s*)?<\/div>\s*<\/div>/igs)
 				{
-					my $menu6 = &clean($1);
-					# print "Menu6 ==> $menu6\n";
+					my $menu6 = $utilityobject->Trim($1);
 					my $cont5 = $2;
 					next if($menu6 =~ m/Category|More\s*categories|Size|Price|You\s*might\s*also\s*like\s*|Free\s*Delivery|Brand|Colour/is);
 					while($cont5 =~ m/href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<|value\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*</igs)
 					{
 						my $catlink5 = $1.$3;
-						my $menu7 = &clean($2.$4);
-						$catlink5 = "http://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
-						my $cont6 = &lwp_get($catlink5); 
+						my $menu7 = $utilityobject->Trim($2.$4);
+						$catlink5 = "https://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
+						my $cont6 = $utilityobject->Lwp_Get($catlink5); 
 						&collect_product($menu1,$menu2,$menu3,$menu4,$menu5,$menu6,$menu7,$cont6);
 					}
 				}
 				while($cont4 =~ m/<span\s*class\=\"left\">\s*((?!Brand|Size|Price)[^>]*?)\s*<([\w\W]*?)<\/div>\s*<\/div>/igs)
 				{
-					my $menu6 = &clean($1);
+					my $menu6 = $utilityobject->Trim($1);
 					my $cont5 = $2;
-					# open ss,">zalando_Test.html";
-					# print ss $cont5;
-					# close ss;
-					# print "Menu6=> $menu6\n";
 					while($cont5 =~ m/<a\s*class\=\"([^>]*?)\"[^>]*?href\=\"\/([^>]*?)\"[^>]*?>/igs)
 					{
-						my $menu7 = &clean($1);
+						my $menu7 = $utilityobject->Trim($1);
 						my $catlink5 = $2;		
 						# next if($menu7 !~ m/Gray/is);						
-						$catlink5 = "http://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
-						my $cont6 = &lwp_get($catlink5); 
-						# open ss,">zalando_Test2.html";
-						# print ss $cont6;
-						# close ss;
+						$catlink5 = "https://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
+						my $cont6 = $utilityobject->Lwp_Get($catlink5); 
 						&collect_product($menu1,$menu2,$menu3,$menu4,$menu5,$menu6,$menu7,$cont6);
 					}
 					while($cont5 =~ m/<a[^>]*?href\=\"\/([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<\/a>/igs)
 					{
 						my $catlink5 = $1;
-						my $menu7 = &clean($2);
-						# next if($menu7 !~ m/Gray/is);
-						$catlink5 = "http://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
-						my $cont6 = &lwp_get($catlink5); 
-						# open ss,">zalando_Test2.html";
-						# print ss $cont6;
-						# close ss;
+						my $menu7 = $utilityobject->Trim($2);
+						$catlink5 = "https://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
+						my $cont6 = $utilityobject->Lwp_Get($catlink5); 
 						&collect_product($menu1,$menu2,$menu3,$menu4,$menu5,$menu6,$menu7,$cont6);
 					}
 				}
@@ -163,55 +149,52 @@ elsif($content =~ m/class\=\"parentCat\">\s*<span\s*class\=\"isActive\s*[^>]*?>\
 		}
 		else
 		{
-			print "Else Part\n";
 			while($subcontent =~ m/<div\s*class\=\"filter\">\s*<div\s*class\=\"title\">\s*<label>\s*([^>]*?)\s*<\/label>\s*<\/div>([\w\W]*?)<\/div>/igs)
 			{
-				my $menu6 = &clean($1);
+				my $menu6 = $utilityobject->Trim($1);
 				my $cont5 = $2;
 				next if($menu6 =~ m/Category|More\s*categories|Size|Price|You\s*might\s*also\s*like\s*|Free\s*Delivery|Brand|Colour/is);
 				while($cont5 =~ m/href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<|value\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*</igs)
 				{
 					my $catlink5 = $1.$3;
-					my $menu7 = &clean($2.$4);
-					$catlink5 = "http://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
-					my $cont6 = &lwp_get($catlink5); 
+					my $menu7 = $utilityobject->Trim($2.$4);
+					$catlink5 = "https://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
+					my $cont6 = $utilityobject->Lwp_Get($catlink5); 
 					&collect_product($menu1,$menu2,$menu3,$menu4,'',$menu6,$menu7,$cont6);
 				}
 			}
 			while($subcontent =~ m/class\=\"fLabel\"\s*[^>]*?>\s*([^>]*?)\s*<\/span>([\w\W]*?)value\=\"(?:close|Apply)\"[^>]*?>\s*(?:<\/form>\s*)?<\/div>\s*<\/div>/igs)
 			{
-				my $menu5 = &clean($1);
+				my $menu5 = $utilityobject->Trim($1);
 				my $cont5 = $2;
 				next if($menu5 =~ m/Category|More\s*categories|Size|Price|You\s*might\s*also\s*like\s*|Free\s*Delivery|Brand/is);
-				# next unless($menu4 =~ m/colour/is);
-				print "Menu => $menu1 -> $menu2 -> $menu3 -> $menu4 -> $menu5\n";
 				while($cont5 =~ m/href\=\"([^>]*?)\"[^>]*?title\=\"([^>]*?)\">|href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<|value\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*</igs)
 				{
 					my $catlink5 = $1.$3.$5;
-					my $menu6 = &clean($2.$4.$6);
-					$catlink5 = "http://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
-					my $cont6 = &lwp_get($catlink5); 
+					my $menu6 = $utilityobject->Trim($2.$4.$6);
+					$catlink5 = "https://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
+					my $cont6 = $utilityobject->Lwp_Get($catlink5); 
 					&collect_product($menu1,$menu2,$menu3,$menu4,'',$menu5,$menu6,$cont6);
 				}
 			}
 			while($subcontent =~ m/<span\s*class\=\"left\">\s*((?!Brand|Size|Price)[^>]*?)\s*<([\w\W]*?)<\/div>\s*<\/div>/igs)
 			{
-				my $menu6 = &clean($1);
+				my $menu6 = $utilityobject->Trim($1);
 				my $cont5 = $2;				
 				while($cont5 =~ m/<a\s*class\=\"([^>]*?)\"[^>]*?href\=\"\/([^>]*?)\"[^>]*?>/igs)
 				{					
-					my $menu7 = &clean($1);
+					my $menu7 = $utilityobject->Trim($1);
 					my $catlink5 = $2;
-					$catlink5 = "http://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
-					my $cont6 = &lwp_get($catlink5); 
+					$catlink5 = "https://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
+					my $cont6 = $utilityobject->Lwp_Get($catlink5); 
 					&collect_product($menu1,$menu2,$menu3,$menu4,'',$menu6,$menu7,$cont6);
 				}
 				while($cont5 =~ m/<a[^>]*?href\=\"\/([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<\/a>/igs)
 				{
 					my $catlink5 = $1;
-					my $menu7 = &clean($2);
-					$catlink5 = "http://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
-					my $cont6 = &lwp_get($catlink5); 
+					my $menu7 = $utilityobject->Trim($2);
+					$catlink5 = "https://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
+					my $cont6 = $utilityobject->Lwp_Get($catlink5); 
 					&collect_product($menu1,$menu2,$menu3,$menu4,'',$menu6,$menu7,$cont6);
 				}
 			}
@@ -220,66 +203,57 @@ elsif($content =~ m/class\=\"parentCat\">\s*<span\s*class\=\"isActive\s*[^>]*?>\
 }
 else
 {
-	print  "Else Part No Sub Menu\n";
 	while($content =~ m/class\=\"fLabel\"\s*[^>]*?>\s*([^>]*?)\s*<\/span>([\w\W]*?)value\=\"(?:close|Apply)\"[^>]*?>\s*(?:<\/form>\s*)?<\/div>\s*<\/div>/igs)
 	{
-		my $menu4 = &clean($1);
+		my $menu4 = $utilityobject->Trim($1);
 		my $cont5 = $2;
 		next if($menu4 =~ m/Category|More\s*categories|Size|Price|You\s*might\s*also\s*like\s*|Free\s*Delivery|Brand/is);
-		# next unless($menu4 =~ m/colour/is);
 		
 		while($cont5 =~ m/href\=\"([^>]*?)\"[^>]*?title\=\"([^>]*?)\">|href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<|value\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*</igs)
 		{
 			my $catlink5 = $1.$3.$5;
-			my $menu5 = &clean($2.$4.$6);
-			$catlink5 = "http://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
-			my $cont6 = &lwp_get($catlink5); 
-			print "Menu => $menu1 -> $menu2 -> $menu3 ->$menu4 -> $menu5\n";
+			my $menu5 = $utilityobject->Trim($2.$4.$6);
+			$catlink5 = "https://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
+			my $cont6 = $utilityobject->Lwp_Get($catlink5); 
 			&collect_product($menu1,$menu2,$menu3,'','',$menu4,$menu5,$cont6);
 		}
 	}			
 	while($content =~ m/<div\s*class\=\"filter\">\s*<div\s*class\=\"title\">\s*<label>\s*([^>]*?)\s*<\/label>\s*<\/div>([\w\W]*?)<\/div>/igs)
 	{
-		my $menu6 = &clean($1);
+		my $menu6 = $utilityobject->Trim($1);
 		my $cont5 = $2;
 		next if($menu6 =~ m/Category|More\s*categories|Size|Price|You\s*might\s*also\s*like\s*|Free\s*Delivery|Brand|Colour/is);
 		while($cont5 =~ m/href\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<|value\=\"([^>]*?)\"[^>]*?>\s*([^>]*?)\s*</igs)
 		{
 			my $catlink5 = $1.$3;
-			my $menu7 = &clean($2.$4);
-			$catlink5 = "http://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
-			my $cont6 = &lwp_get($catlink5); 
+			my $menu7 = $utilityobject->Trim($2.$4);
+			$catlink5 = "https://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
+			my $cont6 = $utilityobject->Lwp_Get($catlink5); 
 			&collect_product($menu1,$menu2,$menu3,'','',$menu6,$menu7,$cont6);
 		}
 	}
 	while($content =~ m/<span\s*class\=\"left\">\s*((?!Brand|Size|Price)[^>]*?)\s*<([\w\W]*?)<\/div>\s*<\/div>/igs)
 	{
-		my $menu6 = &clean($1);
+		my $menu6 = $utilityobject->Trim($1);
 		my $cont5 = $2;
 		while($cont5 =~ m/<a\s*class\=\"([^>]*?)\"[^>]*?href\=\"\/([^>]*?)\"[^>]*?>/igs)
 		{					
-			my $menu7 = &clean($1);
+			my $menu7 = $utilityobject->Trim($1);
 			my $catlink5 = $2;
-			$catlink5 = "http://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
-			my $cont6 = &lwp_get($catlink5); 
+			$catlink5 = "https://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
+			my $cont6 = $utilityobject->Lwp_Get($catlink5); 
 			&collect_product($menu1,$menu2,$menu3,'','',$menu6,$menu7,$cont6);
 		}
 		while($cont5 =~ m/<a[^>]*?href\=\"\/([^>]*?)\"[^>]*?>\s*([^>]*?)\s*<\/a>/igs)
 		{
 			my $catlink5 = $1;
-			my $menu7 = &clean($2);
-			$catlink5 = "http://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
-			my $cont6 = &lwp_get($catlink5); 
+			my $menu7 = $utilityobject->Trim($2);
+			$catlink5 = "https://www.zalando.co.uk/".$catlink5 unless($catlink5 =~ m/^http/is);
+			my $cont6 = $utilityobject->Lwp_Get($catlink5); 
 			&collect_product($menu1,$menu2,$menu3,'','',$menu6,$menu7,$cont6);
 		}		
 	}
 }
-
-
-#################### For Dashboard #######################################
-DBIL::Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'STOP',$robotname);
-#################### For Dashboard #######################################
-
 sub collect_product()
 {
 	my ($menu_1, $menu_2, $menu_3, $menu_4, $menu_5, $menu_6, $menu_7, $category_content) = @_;
@@ -288,10 +262,9 @@ sub collect_product()
 	if($category_content=~m/<div\s*class\=\"pager\s*\">([\w\W]*?)<div\s*class\=\"pager\s*pBottom\s*cleaner\">/is)
 	{
 		my $block=$1;
-		# while($block=~m/class\=\"productBox\"\s*href\=\"([^>]*?)\">\s*<span\s*class\=\"imageBox\">/igs)##while
 		while($block=~m/class\=\"productBox\"\s*href\=\"([^>]*?)\"/igs)##while
 		{
-			my $purl="http://www.zalando.co.uk$1";
+			my $purl="https://www.zalando.co.uk$1";
 			my $pids;
 			if($purl =~ m/\-([a-z0-9]{9})\-[a-z0-9]{3}\./is)
 			{
@@ -300,49 +273,46 @@ sub collect_product()
 			my $product_object_key;
 			if($totalHash{$pids} ne '')
 			{
-				print "Data Exists! -> $totalHash{$pids}\n";
 				$product_object_key = $totalHash{$pids};
 			}
 			else
 			{
-				print "New Data\n";
-				$product_object_key = DBIL::SaveProduct($purl,$dbh,$robotname,$retailer_id,$Retailer_Random_String,$excuetionid,$mqh);
+				$product_object_key = $dbobject->SaveProduct($purl,$robotname,$retailer_id,$Retailer_Random_String);
 				$totalHash{$pids}=$product_object_key;
 			}
 			unless($menu_1=~m/^\s*$/is)
 			{
-				DBIL::SaveTag('Menu_1',$menu_1,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+				$dbobject->SaveTag('Menu_1',$menu_1,$product_object_key,$robotname,$Retailer_Random_String);
 			}
 			unless($menu_2=~m/^\s*$/is)
 			{
-				DBIL::SaveTag('Menu_2',$menu_2,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+				$dbobject->SaveTag('Menu_2',$menu_2,$product_object_key,$robotname,$Retailer_Random_String);
 			}
 			unless($menu_3=~m/^\s*$/is)
 			{
-				DBIL::SaveTag('Menu_3',$menu_3,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+				$dbobject->SaveTag('Menu_3',$menu_3,$product_object_key,$robotname,$Retailer_Random_String);
 			}
 			unless($menu_4=~m/^\s*$/is)
 			{
-				DBIL::SaveTag('Menu_4',$menu_4,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+				$dbobject->SaveTag('Menu_4',$menu_4,$product_object_key,$robotname,$Retailer_Random_String);
 			}
 			unless($menu_5=~m/^\s*$/is)
 			{
-				DBIL::SaveTag('Menu_5',$menu_5,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+				$dbobject->SaveTag('Menu_5',$menu_5,$product_object_key,$robotname,$Retailer_Random_String);
 			}
 			unless($menu_7=~m/^\s*$/is)
 			{
-				DBIL::SaveTag($menu_6,$menu_7,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+				$dbobject->SaveTag($menu_6,$menu_7,$product_object_key,$robotname,$Retailer_Random_String);
 			}
-			$dbh->commit();
+			$dbobject->commit();
 		}
 	}
 	elsif($category_content=~m/Sort\s*by\:([\w\W]*?)<div\s*class\=\"pager\s*pBottom\s*cleaner\">/is)
 	{
 		my $block=$1;
-		# while($block=~m/class\=\"productBox\"\s*href\=\"([^>]*?)\">\s*<span\s*class\=\"imageBox\">/igs)##while
 		while($block=~m/class\=\"productBox\"\s*href\=\"([^>]*?)\"/igs)##while
 		{
-			my $purl="http://www.zalando.co.uk$1";
+			my $purl="https://www.zalando.co.uk$1";
 			my $pids;
 			if($purl =~ m/\-([a-z0-9]{9})\-[a-z0-9]{3}\./is)
 			{
@@ -351,47 +321,45 @@ sub collect_product()
 			my $product_object_key;
 			if($totalHash{$pids} ne '')
 			{
-				print "Data Exists! -> $totalHash{$pids}\n";
 				$product_object_key = $totalHash{$pids};
 			}
 			else
 			{
-				print "New Data\n";
-				$product_object_key = DBIL::SaveProduct($purl,$dbh,$robotname,$retailer_id,$Retailer_Random_String,$excuetionid,$mqh);
+				$product_object_key = $dbobject->SaveProduct($purl,$robotname,$retailer_id,$Retailer_Random_String);
 				$totalHash{$pids}=$product_object_key;
 			}
 			unless($menu_1=~m/^\s*$/is)
 			{
-				DBIL::SaveTag('Menu_1',$menu_1,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+				$dbobject->SaveTag('Menu_1',$menu_1,$product_object_key,$robotname,$Retailer_Random_String);
 			}
 			unless($menu_2=~m/^\s*$/is)
 			{
-				DBIL::SaveTag('Menu_2',$menu_2,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+				$dbobject->SaveTag('Menu_2',$menu_2,$product_object_key,$robotname,$Retailer_Random_String);
 			}
 			unless($menu_3=~m/^\s*$/is)
 			{
-				DBIL::SaveTag('Menu_3',$menu_3,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+				$dbobject->SaveTag('Menu_3',$menu_3,$product_object_key,$robotname,$Retailer_Random_String);
 			}
 			unless($menu_4=~m/^\s*$/is)
 			{
-				DBIL::SaveTag('Menu_4',$menu_4,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+				$dbobject->SaveTag('Menu_4',$menu_4,$product_object_key,$robotname,$Retailer_Random_String);
 			}
 			unless($menu_5=~m/^\s*$/is)
 			{
-				DBIL::SaveTag('Menu_5',$menu_5,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+				$dbobject->SaveTag('Menu_5',$menu_5,$product_object_key,$robotname,$Retailer_Random_String);
 			}
 			unless($menu_7=~m/^\s*$/is)
 			{
-				DBIL::SaveTag($menu_6,$menu_7,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+				$dbobject->SaveTag($menu_6,$menu_7,$product_object_key,$robotname,$Retailer_Random_String);
 			}
-			$dbh->commit();
+			$dbobject->commit();
 		}
 	}
 	elsif($category_content =~ m/class\=\"productBox\"\s*href\=\"([^>]*?)\"/is)
 	{
 		while($category_content=~m/class\=\"productBox\"\s*href\=\"([^>]*?)\"/igs)##while
 		{
-			my $purl="http://www.zalando.co.uk$1";
+			my $purl="https://www.zalando.co.uk$1";
 			my $pids;
 			if($purl =~ m/\-([a-z0-9]{9})\-[a-z0-9]{3}\./is)
 			{
@@ -400,85 +368,52 @@ sub collect_product()
 			my $product_object_key;
 			if($totalHash{$pids} ne '')
 			{
-				print "Data Exists! -> $totalHash{$pids}\n";
 				$product_object_key = $totalHash{$pids};
 			}
 			else
 			{
-				print "New Data\n";
-				$product_object_key = DBIL::SaveProduct($purl,$dbh,$robotname,$retailer_id,$Retailer_Random_String,$excuetionid,$mqh);
+				$product_object_key = $dbobject->SaveProduct($purl,$robotname,$retailer_id,$Retailer_Random_String);
 				$totalHash{$pids}=$product_object_key;
 			}
 			unless($menu_1=~m/^\s*$/is)
 			{
-				DBIL::SaveTag('Menu_1',$menu_1,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+				$dbobject->SaveTag('Menu_1',$menu_1,$product_object_key,$robotname,$Retailer_Random_String);
 			}
 			unless($menu_2=~m/^\s*$/is)
 			{
-				DBIL::SaveTag('Menu_2',$menu_2,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+				$dbobject->SaveTag('Menu_2',$menu_2,$product_object_key,$robotname,$Retailer_Random_String);
 			}
 			unless($menu_3=~m/^\s*$/is)
 			{
-				DBIL::SaveTag('Menu_3',$menu_3,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+				$dbobject->SaveTag('Menu_3',$menu_3,$product_object_key,$robotname,$Retailer_Random_String);
 			}
 			unless($menu_4=~m/^\s*$/is)
 			{
-				DBIL::SaveTag('Menu_4',$menu_4,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+				$dbobject->SaveTag('Menu_4',$menu_4,$product_object_key,$robotname,$Retailer_Random_String);
 			}
 			unless($menu_5=~m/^\s*$/is)
 			{
-				DBIL::SaveTag('Menu_5',$menu_5,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+				$dbobject->SaveTag('Menu_5',$menu_5,$product_object_key,$robotname,$Retailer_Random_String);
 			}
 			unless($menu_7=~m/^\s*$/is)
 			{
-				DBIL::SaveTag($menu_6,$menu_7,$product_object_key,$dbh,$robotname,$Retailer_Random_String,$excuetionid);
+				$dbobject->SaveTag($menu_6,$menu_7,$product_object_key,$robotname,$Retailer_Random_String);
 			}
-			$dbh->commit();
+			$dbobject->commit();
 		}
 	}
 	if($category_content=~m/<link\s*rel="next"\s*href\=\"([^>]*?)\"\s*\/>/is)
 	{
 		my $next_page_url=$1;	
-		print "Next:: $next_page_url\n";
-		$category_content = lwp_get($next_page_url);
+		$category_content = $utilityobject->Lwp_Get($next_page_url);
 		goto nextpage;
 		
 	}
     elsif($category_content=~m/<span\s*class\=\"current\">[\d]+<\/span>\s*<\/li><li>\s*<a\s*href\=\"([^>]*?)\">/is)
 	{
-		my $next_page_url="http://www.zalando.co.uk/$1";	
-		print "Next:: $next_page_url\n";
-		$category_content = lwp_get($next_page_url);
+		my $next_page_url="https://www.zalando.co.uk/$1";	
+		$category_content = $utilityobject->Lwp_Get($next_page_url);
 		goto nextpage;
 	}
 }
-sub lwp_get() 
-{ 
-    REPEAT: 
-	my $url = $_[0];
-	$url =~ s/amp;//igs;
-    my $req = HTTP::Request->new(GET=>$url); 
-    $req->header("Accept"=>"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"); 
-    $req->header("Content-Type"=>"application/x-www-form-urlencoded"); 
-    my $res = $ua->request($req); 
-    $cookie->extract_cookies($res); 
-    $cookie->save; 
-    $cookie->add_cookie_header($req); 
-    my $code = $res->code(); 
-    print $code,"\n"; 
-    if($code =~ m/50/is) 
-    { 
-        sleep 500; 
-        goto REPEAT; 
-    } 
-    return($res->content()); 
-} 
-sub clean() 
-{ 
-    my $var=shift; 
-    $var=~s/<[^>]*?>//igs; 
-    $var=~s/&nbsp\;|amp\;/ /igs; 
-    $var=decode_entities($var); 
-    $var=~s/\s+/ /igs; 
-    return ($var); 
-}
+
