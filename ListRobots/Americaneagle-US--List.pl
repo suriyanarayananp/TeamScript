@@ -67,58 +67,51 @@ $logger->send("$robotname :: Instance Started :: $pid\n");
 
 # Using the argument set the domain URLs'.
 my $url="http://www.ae.com";
-print "$url\n";
 # Fetch the content based on the domain URLs'.
 my $cont = $utilityobject->Lwp_Get($url);
 while($cont =~ m/<a\s*class\=\"inline\-block\-middle\s*site\-top\-link\s*[^>]*?href\=\"[^>]*?\">\s*([^>]*?)\s*<\/a>([\w\W]*?)<\/div>\s*<\/div>\s*<\/div>\s*<\/div>/igs)
 {
 	my $menu1 = $1;  ##Women
 	my $mcont = $2;
-	# next unless($menu1 =~ m/\bAerie\b/is);
-	
+	# next unless($menu1 =~ m/\bWomen\b/is);	
 	while($mcont =~ m/<ul\s*class\=\"nav\-column\s*inline\-block\-top[^>]*?>\s*<li>(?:<strong>\s*<a\s*href[^>]*?>|<em>|<strong>\s*<a[^>]*?>\s*<span>)?\s*([^>]*?)\s*<([\w\W]*?)(?:<\/li>\s*<\/ul>|<\/li>\s*<li>)/igs)
 	{
 		my $menu2 = $1;  ## Featured
 		my $m2cont = $2;
-		print "L1 -> $menu1->$menu2 \n";
-		# next unless($menu2 =~ m/Swim/is);
+		# next unless($menu2 =~ m/Tops/is);
 		while($m2cont =~ m/href\=\"([^>]*?)\">\s*([^>]*?)\s*<\/a>/igs)
 		{				
 			my $menuurl2 = $1;
 			my $menu3 = $2;  ## New Arrivals
+			# next unless($menu3 =~ m/Tees/is);
 			$menuurl2="http://www.ae.com".$menuurl2 if($menuurl2!~m/^http/is);
 			my $subcont3 = $utilityobject->Lwp_Get($menuurl2);
 			my $test=quotemeta($menu3);
-			print "L1 -> $menu1->$menu2->$menu3 ->$menuurl2\n";
-			# next unless($menu3 =~ m/socks/is);
 			# Check if menu3 having sub-block, it should consider as menu4 [Menu3 :: New Arrivals].
-			if($subcont3 =~ m/>\s*$test\s*<\/span>\s*<\/a>\s*<ul\s*class\=\"(?:subMenu|Menu)\">([\w\W]*?)<\/ul>/is)
+			# if($subcont3 =~ m/>\s*$test\s*<\/span>\s*<\/a>\s*<ul\s*class\=\"(?:subMenu|Menu)\">([\w\W]*?)<\/ul>/is)
+			if($subcont3 =~ m/>\s*$test\s*<\/span>\s*<\/a>\s*<\/li>\s*<ul>\s*<li\s*class[^>]*?>([\w\W]*?)<\/ul>/is)
 			{
 				my $subcont4 = $1;
-				# print "Im getting New arrivals block \n";
 				# Getting the product page URLs from the block.
 				while($subcont4 =~ m/href\=\"([^>]*?)\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
 				{
 					my $menuurl3 = $1;
 					my $menu4 = $2;
+					$menuurl3="http://www.ae.com".$menuurl3 if($menuurl3!~m/^http/is);
 					my $test=quotemeta($menu4);
-					print "L1 -> $menu1->$menu2->$menu3->$menu4\n";
 					my $subcont5 = $utilityobject->Lwp_Get($menuurl3);
 					
 					# Check if menu3 having sub-block, it should consider as menu4 [Menu3 :: New Arrivals].
 					if($subcont5 =~ m/>\s*$test\s*<\/span>\s*<\/a>\s*<ul\s*class\=\"(?:subMenu|Menu)\">([\w\W]*?)<\/ul>/is and $menu2 !~ m/Featured/is)
 					{
 						my $subcont5block = $1;
-						# print "Im getting New arrivals block \n";
 						# Getting the product page URLs from the block.
 						while($subcont5block =~ m/href\=\"([^>]*?)\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
 						{
 							my $menuurl4 = $1;
 							my $menu5 = $2;
-							# my $test=quotemeta($menu4);
-							print "L1 -> $menu1->$menu2->$menu3->$menu4 -> $menu5\n";
-							
-							my $subcont6 = $utilityobject->Lwp_Get($menuurl3);
+							$menuurl4="http://www.ae.com".$menuurl4 if($menuurl4!~m/^http/is);
+							my $subcont6 = $utilityobject->Lwp_Get($menuurl4);
 							
 							# Pattern match to get the category ID.
 							my $catid = $1 if($menuurl4 =~ m/catId\=([^>]*?)$/is);
@@ -226,23 +219,18 @@ while($cont =~ m/<a\s*class\=\"inline\-block\-middle\s*site\-top\-link\s*[^>]*?h
 					}
 					else
 					{
-						print "ELse in Menu4 -> $menu1->$menu2->$menu3->$menu4\n";
 						# Pattern match to get the category ID.
 						my $catid = $1 if($menuurl3 =~ m/catId\=([^>]*?)$/is);
-						
 						# Pattern match to get the block based on the category ID.
 						if($subcont5 =~ m/\{\"$catid\"\:\{\"availablePrdIds\"\:\[([\w\W]*?)\]/is)
 						{
 							my $catCollection = $1;
-							
 							# Collecting the Product URLs.
 							while($catCollection =~ m/\"prdId\"\:\"([^>]*?)\"\,\"faceoutId\"\:\"([^>]*?)\"/igs)
 							{
 								my $pid = $utilityobject->Trim($1);
-								
 								# Form the Product URLs' based on the productID.
 								my $purl = "http://www.ae.com/web/browse/product.jsp?productId=".$pid;
-								
 								# Insert Product_List table based on values collected for the product.
 								my $product_object_key = $dbobject->SaveProduct($purl,$robotname,$retailer_id,$Retailer_Random_String);
 								
@@ -324,8 +312,6 @@ while($cont =~ m/<a\s*class\=\"inline\-block\-middle\s*site\-top\-link\s*[^>]*?h
 			}
 			else
 			{
-				print "L2 -> $menu1->$menu2->$menu3\n";
-				
 				# Pattern match to get the categoryID.
 				my $catid = $1 if($menuurl2 =~ m/catId\=([^>]*?)$/is);
 				
@@ -380,8 +366,6 @@ while($cont =~ m/<a\s*class\=\"inline\-block\-middle\s*site\-top\-link\s*[^>]*?h
 					while($subcont3 =~ m/\{\"availablePrdIds\"\:\[\{\"prdId\"\:\"([^>]*?)\"|\"prdId\"\:\"([^\:]*?)\"\,\"prdName\"\:\"/igs)
 					{
 						my $pid = $utilityobject->Trim($1.$2);
-						print $pid,"\n";
-						
 						# Form the Product URLs' based on the productID.
 						my $purl = "http://www.ae.com/web/browse/product.jsp?productId=".$pid;
 						
@@ -426,15 +410,12 @@ while($cont =~ m/<a\s*class\=\"inline\-block\-middle\s*site\-top\-link\s*[^>]*?h
 		my $menuurl2 = $1;
 		my $menu2 = $2;  ## Dresses
 		$menuurl2="http://www.ae.com".$menuurl2 if($menuurl2!~m/^http/is);
-		print "Sec2 => $menu1 -> $menu2\n";
 		# next unless($menu2 =~ m/Swim/is);
 		my $subcont3 = $utilityobject->Lwp_Get($menuurl2);
 		my $test = quotemeta($menu2);
 		if($subcont3 =~ m/>\s*$test\s*<\/span>\s*<\/a>\s*(?:<!--[\w\W]*?-->)?\s*?(?:<[^>]*?\s*>*)?<ul\s*class\=\"(?:subMenu|Menu)\">([\w\W]*?)<\/ul>/is)
 		{
 			my $subcont4 = $1;
-			# print "Im getting New arrivals block \n";
-			# exit;
 			# Getting the product page URLs from the block.
 			while($subcont4 =~ m/href\=\"([^>]*?)\">\s*<span>\s*([^>]*?)\s*<\/span>/igs)
 			{
@@ -452,7 +433,6 @@ while($cont =~ m/<a\s*class\=\"inline\-block\-middle\s*site\-top\-link\s*[^>]*?h
 						my $menuurl4 = $1;
 						my $menu4 = $2;
 						my $test = quotemeta($menu4);
-						print "L1 -> $menu1->$menu2->$menu3->$menu4\n";
 						$menuurl4="http://www.ae.com".$menuurl4 if($menuurl4 !~ m/^http/is);
 						my $subcont7 = $utilityobject->Lwp_Get($menuurl4);
 					
@@ -464,10 +444,8 @@ while($cont =~ m/<a\s*class\=\"inline\-block\-middle\s*site\-top\-link\s*[^>]*?h
 						{
 							my $displaycat = $1;
 							$displaycat =~ s/\"//igs;
-							print $displaycat,"\n\n";
 							@cats = split(/\,/, $displaycat);
 						}
-						print "CATS ::  @cats\n";
 						foreach (@cats)
 						{
 							$catid = $_;
@@ -569,8 +547,6 @@ while($cont =~ m/<a\s*class\=\"inline\-block\-middle\s*site\-top\-link\s*[^>]*?h
 					# Pattern match to get the category ID.
 					my $catid = $1 if($menuurl3 =~ m/catId\=([^>]*?)$/is);
 					
-					print "L1 -> $menu1->$menu2->$menu3 -> $catid\n";
-					
 					# Pattern match to get the block based on the category ID.
 					if($subcont6 =~ m/\{\"$catid\"\:\{\"availablePrdIds\"\:\[([\w\W]*?)\]/is)
 					{
@@ -614,55 +590,11 @@ while($cont =~ m/<a\s*class\=\"inline\-block\-middle\s*site\-top\-link\s*[^>]*?h
 							}
 						}
 					}
-=cut					
-					# Pattern match to getting the productIDs' from the sub content.
-					if($subcont6 =~ m/\{\"availablePrdIds\"\:\[\{\"prdId\"\:\"([^>]*?)\"/is)
-					{
-						# pattern match to collecting the productID.
-						while($subcont6 =~ m/\{\"availablePrdIds\"\:\[\{\"prdId\"\:\"([^>]*?)\"/igs)
-						{
-							my $pid = $utilityobject->Trim($1);
-							
-							# Form the Product URLs' based on the productID.
-							my $purl = "http://www.ae.com/web/browse/product.jsp?productId=".$pid;
-							
-							# Insert Product_List table based on values collected for the product.
-							my $product_object_key = $dbobject->SaveProduct($purl,$robotname,$retailer_id,$Retailer_Random_String);
-							
-							# Save the Tag Information based on the ProductID and Tag values.
-							$dbobject->SaveTag('Menu_1',$menu1,$product_object_key,$robotname,$Retailer_Random_String);
-							$dbobject->SaveTag($menu2,$menu3,$product_object_key,$robotname,$Retailer_Random_String);
-							
-							# Committing the transaction.
-							$dbobject->commit();
-							
-							# Collecting the bundle product based on the ProductIDs.
-							if($subcont6 =~ m/\"prdId\"\:\"$pid\"\,\"faceoutId\"\:\"\d+\"\,\"addlBundlePrdId\"\:\{\"prdId\"\:\"([^>]*?)\"/is)
-							{
-								my $pid = $utilityobject->Trim($1);
-								
-								# Form the Product URLs' based on the productID.
-								my $purl = "http://www.ae.com/web/browse/product.jsp?productId=".$pid;
-								
-								# Insert Product_List table based on values collected for the product.
-								my $product_object_key = $dbobject->SaveProduct($purl,$robotname,$retailer_id,$Retailer_Random_String);
-								
-								# Save the Tag Information based on the ProductID and Tag values.
-								$dbobject->SaveTag('Menu_1',$menu1,$product_object_key,$robotname,$Retailer_Random_String);
-								$dbobject->SaveTag($menu2,$menu3,$product_object_key,$robotname,$Retailer_Random_String);
-								
-								# Committing the transaction.
-								$dbobject->commit();
-							}
-						}
-					}
-=cut					
 					# pattern match to collecting the productID.
 					while($subcont6 =~ m/catId\=$catid\&productId\=([^>]*?)\"/igs)
 					{
 						my $pid = $utilityobject->Trim($1);
 						$pid =~ s/_[0-9]{3}$//igs;
-						# print "Product ID > $pid\n";
 						# Form the Product URLs' based on the productID.
 						my $purl = "http://www.ae.com/web/browse/product.jsp?productId=".$pid;
 						
@@ -676,24 +608,6 @@ while($cont =~ m/<a\s*class\=\"inline\-block\-middle\s*site\-top\-link\s*[^>]*?h
 						# Committing the transaction.
 						$dbobject->commit();
 						
-						# Collecting the bundle product based on the ProductIDs.
-						# if($subcont6 =~ m/\"prdId\"\:\"$pid\"\,\"faceoutId\"\:\"\d+\"\,\"addlBundlePrdId\"\:\{\"prdId\"\:\"([^>]*?)\"/is)
-						# {
-							# my $pid = $utilityobject->Trim($1);
-							
-							# Form the Product URLs' based on the productID.
-							# my $purl = "http://www.ae.com/web/browse/product.jsp?productId=".$pid;
-							
-							# Insert Product_List table based on values collected for the product.
-							# my $product_object_key = $dbobject->SaveProduct($purl,$robotname,$retailer_id,$Retailer_Random_String);
-							
-							# Save the Tag Information based on the ProductID and Tag values.
-							# $dbobject->SaveTag('Menu_1',$menu1,$product_object_key,$robotname,$Retailer_Random_String);
-							# $dbobject->SaveTag($menu2,$menu3,$product_object_key,$robotname,$Retailer_Random_String);
-							
-							# Committing the transaction.
-							# $dbobject->commit();
-						# }
 					}
 				}
 			}

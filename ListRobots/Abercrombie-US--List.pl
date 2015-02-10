@@ -53,9 +53,7 @@ $dbobject->connect($ini->{mysql}->{host}, $ini->{mysql}->{port}, $ini->{mysql}->
 my $utilityobject = AnorakUtility->new($logger,$ua);
 
 # Getting Retailer_id and Proxystring.
-# my ($retailer_id,$ProxySetting) = $dbobject->GetRetailerProxy($retailer_name);
-my $retailer_id = '56de30f0f151413bf26f37b0c211f13749c7214';
-my $ProxySetting = 'http://frawspcpx.cloud.trendinglines.co.uk:3129';
+my ($retailer_id,$ProxySetting) = $dbobject->GetRetailerProxy($retailer_name);
 $dbobject->RetailerUpdate($retailer_id,$robotname,'start');
 
 # Setting the Environment Variables.
@@ -81,10 +79,10 @@ else
 my $content = $utilityobject->Lwp_Get($sourceurl);
 
 # Navigate for each main menu.
-while($content =~ m/href\=\"([^>]*?)\">\s*<h2[^>]*?nav\-description\">\s*([^>]*?)\s*<\/h2>/igs)
+while($content =~ m/href\=\"([^>]*?)\">\s*<h2[^>]*?nav\-description\">\s*([^>]*?)\s*<\/h2>|<a\s*id\=\"division[^>]*?href\=\"([^>]*?)\">\s*([^>]*?)\s*<\/a>/igs)
 {
-	my $caturl = $1;
-	my $menu1 = $utilityobject->Trim($2);
+	my $caturl = $1.$3;
+	my $menu1 = $utilityobject->Trim($2.$4);
 	$caturl = $sourceurl.$caturl unless($caturl =~ m/^http/is);
 	my $subcontent = $utilityobject->Lwp_Get($caturl); 
 	
@@ -182,8 +180,11 @@ while($content =~ m/href\=\"([^>]*?)\">\s*<h2[^>]*?nav\-description\">\s*([^>]*?
 					my $product_object_key = $dbobject->SaveProduct($purl,$robotname,$retailer_id,$Retailer_Random_String);
 					if($sourceurl =~ m/abercrombiekids/is)
 					{
-						# Save the tag information if menu1 is non-empty.
-						$dbobject->SaveTag('Menu_1','Abercrombie Kids',$product_object_key,$robotname,$Retailer_Random_String);
+						unless($menu1=~m/^\s*$/is)
+						{
+							# Save the tag information if menu1 is non-empty.
+							$dbobject->SaveTag('Menu_1','Abercrombie Kids',$product_object_key,$robotname,$Retailer_Random_String);
+						}
 						unless($menu1=~m/^\s*$/is)
 						{
 							# Save the tag information if menu1 is non-empty.

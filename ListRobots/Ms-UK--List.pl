@@ -30,7 +30,6 @@ my %validate;
 
 # Setting the UserAgent.
 my $ua = LWP::UserAgent->new(show_progress=>1);
-##$ua->agent("Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 (.NET CLR 3.5.30729)");
 $ua->agent('WGSN;+44 207 516 5099;datacollection@wgsn.com');
 $ua->timeout(30); 
 $ua->cookie_jar({});
@@ -57,7 +56,6 @@ my $utilityobject = AnorakUtility->new($logger,$ua);
 # Getting Retailer_id and Proxystring.
 my ($retailer_id,$ProxySetting) = $dbobject->GetRetailerProxy('m&s-uk');
 $dbobject->RetailerUpdate($retailer_id,$robotname,'start');
-# print "$retailer_id,$ProxySetting\n"; exit;
 # Setting the Environment Variables.
 $utilityobject->SetEnv($ProxySetting);
 
@@ -102,7 +100,6 @@ foreach (keys %ids)
 			{
 				my $listurl = $1;
 				my $menu3 = $utilityobject->Trim($2);
-				print "$menu1 -> $menu2 -> $menu3\n";
 				# next unless($menu1 =~ m/Men/is && $menu2 =~ m/Clothing/is && $menu3 =~ m/Underwear/is);
 				my $listcontent = $utilityobject->Lwp_Get($listurl);
 				&URL_Collection($listcontent, $menu1, $menu2, $menu3, '', '', '');
@@ -139,7 +136,6 @@ sub URL_Collection()
 			my $filter_pass=$1;
 			my $filter_value=$2;
 			my $filter_url=$url_append.'&'.$filter_pass.'=on'."&display=product&cachedFilters=".$filter_pass."+0+40+0+40+product+24";
-			# print "Block1\n\n";
 			$filter_url =~ s/\s+//igs;
 			my $filter_content = $utilityobject->Lwp_Get($filter_url);
 			NextPagenew1:
@@ -211,8 +207,7 @@ sub URL_Collection()
 	{
 		while($menu_3_content=~m/<div\s*class\=\"head\">\s*<a\s*href\=\"\#\"\s*class\=\"heading\s*open\">\s*((?!Size|Price|Rating|Gender)[^>]*?)\s*<\/a>\s*([\w\W]*?)\s*<\/div>\s*<\/fieldset>/igs)
 		{
-			# print "Block1\n";
-			my $filter=&clean($1);						
+			my $filter=$utilityobject->Trim($1);						
 			my $filter_block=$2;					
 			$filter=~s/\&\#x28\;/\(/igs;
 			$filter=~s/\&\#x29\;/\)/igs;
@@ -222,7 +217,6 @@ sub URL_Collection()
 				my $filter_pass=$1;
 				my $filter_value=$2;
 				my $filter_url=$url_append.'&'.$filter_pass.'=on'."&display=product&cachedFilters=".$filter_pass."+0+40+0+40+product+24";
-				# print "Block1\n\n";
 				$filter_url =~ s/\s+//igs;
 				my $filter_content = $utilityobject->Lwp_Get($filter_url);
 				NextPage1:
@@ -313,7 +307,7 @@ sub URL_Collection()
 sub db_insert()
 {
 	my ($product_url, $menu1, $menu2, $menu3, $menu4, $menu5, $menu6, $filter, $filtervalue) = @_;
-	print "$menu1, $menu2, $menu3, $menu4, $menu5, $menu6, $filter, $filtervalue\n";
+	# print "$menu1, $menu2, $menu3, $menu4, $menu5, $menu6, $filter, $filtervalue\n";
 	my $product_object_key;
 	$product_url = "http://www.marksandspencer.com".$product_url unless($product_url =~ m/^http/is);
 	
@@ -370,7 +364,7 @@ sub db_insert_multi_item()
 	while($product_url_content=~m/<a[^>]*?href\s*\=\s*\"([^>]*?)\"[^>]*?>[^>]*?<\/a>\s*<\/div>\s*<input[^>]*?>\s*<div[^>]*? class\s*\=\s*\"product\"[^>]*?>/igs)
 	{
 		my $product_url1=$1;
-		$product_url1=&clean($product_url1);
+		$product_url1=$utilityobject->Trim($product_url1);
 		$product_url1 = "http://www.marksandspencer.com".$product_url1 unless($product_url1 =~ m/^http/is);
 		
 		if($validate{$product_url1} eq '')
@@ -410,14 +404,4 @@ sub db_insert_multi_item()
 		}
 		$dbobject->commit();
 	}
-}
-sub clean()
-{
-	my $var=shift;
-	$var=~s/<[^>]*?>/ /igs;	
-	$var=~s/\&nbsp\;|amp\;/ /igs;
-	$var=~s/\\n\s*$//igs;
-	$var=$utilityobject->Decode($var);
-	$var=~s/\s+/ /igs;
-	return ($var);
 }
