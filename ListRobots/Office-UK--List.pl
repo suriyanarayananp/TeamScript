@@ -63,6 +63,7 @@ $logger->send("$robotname :: Instance Started :: $pid\n");
 my $url='http://www.office.co.uk';
 my $content = $utilityobject->Lwp_Get($url);
 
+
 # Extraction of the Menu1 URL, Menu1 Name, Menu1 block
 while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[^>]*?>)?([^>]*?)\s*(?:<\/span>)?\s*<\/a>(?:\s*<div>([\W\w]*?)<\/ul><\/div>\s*<\/li>)/igs)
 {
@@ -80,7 +81,7 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 	}
 	
 	my $domain_url=$Menu1_URL;
-
+	
 	my $page_content=$utilityobject->Lwp_Get($Menu1_URL);
 	
 	# Filter navigation
@@ -92,7 +93,6 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 		# Skipping the Shop by filter
 		next if($filter_header=~m/Shop\s*by|Size|price/is);
 		
-		#while($filter_block=~m/<a\s*href\=\"([^>]*?)\"\s*[^>]*?>\s*<span\s*class\=\"facetNameVal\">([^>]*?)<\/span>\s*<span\s*class\=\"facetVal\">[^>]*?<\/span>\s*<\/a>/igs)
 		if($filter_block=~m/<a\s*href\=\"([^>]*?)\"\s*[^>]*?checked_facet\s*\">\s*<span\s*class\=\"facetNameVal[^>]*?\">([^>]*?)<\/span>\s*<span\s*class\=\"facetVal\">[^>]*?<\/span>\s*<\/a>/is)
 		{
 			my $filter_url=$1;
@@ -111,7 +111,8 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 			$next_page=~s/\&amp\;/&/igs;
 			# Fetching the URL content
 			my $page_content =$utilityobject->Lwp_Get($next_page);
-						
+			
+			
 			# Product collection
 			while($page_content=~m/<div\s*class\=\"productList_item\">\s*<div[^>]*?>\s*<a\s*class\=\"displayBlock\s*brand\"\s*href\=\"([^>]*?)\">/igs)
 			{
@@ -138,7 +139,7 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 				{
 					$next_page=$domain_url.$next_page;
 				}
-				
+
 				goto pagination1;
 			}
 						
@@ -250,11 +251,13 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 							{
 								$next_page1=$domain_url.$next_page1;
 							}							
+
 							goto pagination4;
 						}
 					}
 				}	
 			}
+				################### END OF ADDITION ##################
 		}
 		else
 		{
@@ -305,7 +308,7 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 					}							
 					goto pagination2;
 				}
-										
+											
 				# Filter navigation # Sub inner Filter Navigation
 				while($page_content=~m/<span\s*class\=\"categoryTree_bold\s*active\"\s*id\=\"[^>]*?_facetValues\"\s*name\=\"filter\">\s*<[^>]*?>\s*([^>]*?)\s*<\/span>([\w\W]*?)<\/ul>\s*(?:<a[^>]*?>[^>]*?<\/a>\s*)?<\/li>/igs)
 				{
@@ -315,7 +318,6 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 					# Skipping the Shop by filter
 					next if($filter_header1=~m/Shop\s*by|Size|price/is);
 					
-					##while($filter_block=~m/<a\s*href\=\"([^>]*?)\"\s*[^>]*?>\s*<span\s*class\=\"facetNameVal\">([^>]*?)<\/span>\s*<span\s*class\=\"facetVal\">[^>]*?<\/span>\s*<\/a>/igs)
 					if($filter_block1=~m/<a\s*href\=\"([^>]*?)\"\s*[^>]*?checked_facet\s*\">\s*<span\s*class\=\"facetNameVal[^>]*?\">([^>]*?)<\/span>\s*<span\s*class\=\"facetVal\">[^>]*?<\/span>\s*<\/a>/is)
 					{
 						my $filter_url1=$1;
@@ -377,6 +379,7 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 								$filter_url1=$domain_url.$filter_url1;
 							}
 							$filter_url1=~s/\&amp\;/&/igs;
+
 							my $next_page1=$filter_url1;
 							
 							# Filter page navigation
@@ -417,6 +420,7 @@ while($content=~m/<li\s*class\=\"parent\s*\">\s*<a\s*href\=\"([^>]*?)\">\s*(?:<[
 						}
 					}	
 				}
+					################### END OF ADDITION ##################
 			}
 		}	
 	}	

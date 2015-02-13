@@ -20,7 +20,7 @@ $robotname =$1 if($robotname =~ m/[^>]*?\/*([^\/]+?)\s*$/is);
 my $retailer_name=$robotname;
 $retailer_name =~ s/\-\-List\s*$//igs;
 $retailer_name = lc($retailer_name);
-my $Retailer_Random_String='Zuk';
+my $Retailer_Random_String='Zus';
 my $pid = $$;
 my $ip = `/sbin/ifconfig eth0 | grep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`;
 $ip = $1 if($ip =~ m/inet\s*addr\:([^>]*?)\s+/is);
@@ -64,7 +64,7 @@ $dbobject->Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'START',$r
 # Once script has started send a msg to logger.
 $logger->send("$robotname :: Instance Started :: $pid\n");
 
-my ($menu_1,$menu_2,$menu_3,$menu_4, $menu_5, $col_url);
+my ($menu_1,$menu_2,$menu_3,$menu_4, $col_url);
 my %hash_id;
 
 $menu_1=$ARGV[0];
@@ -75,32 +75,22 @@ if($ARGV[2]=~m/http\:\/\//is)
 	$col_url=$ARGV[2];
 	$menu_3='';
 	$menu_4='';
-	$menu_5='';	
 }
 elsif($ARGV[3]=~m/http\:\/\//is)
 {
 	$col_url=$ARGV[3];
 	$menu_3=$ARGV[2];
 	$menu_4='';
-	$menu_5='';	
 }
 elsif($ARGV[4]=~m/http\:\/\//is)
 {	
 	$col_url=$ARGV[4];
 	$menu_3=$ARGV[2];
-	$menu_4=$ARGV[3];
-	$menu_5='';	
-}
-elsif($ARGV[5]=~m/http\:\/\//is)
-{	
-	$col_url=$ARGV[5];
-	$menu_3=$ARGV[2];
-	$menu_4=$ARGV[3];
-	$menu_5=$ARGV[4];	
+	$menu_4=$ARGV[3];	
 }
 
 # Product Collection
-&Product_Collection($col_url,$menu_1,$menu_2,$menu_3,$menu_4,$menu_5);
+&Product_Collection($col_url,$menu_1,$menu_2,$menu_3,$menu_4);
 
 # Function definition to collect products.
 sub Product_Collection
@@ -110,50 +100,44 @@ sub Product_Collection
 	my $menu2=shift;
 	my $menu3=shift;
 	my $menu4=shift;
-	my $menu5=shift;
 	
-	my $cat_id;
-	 if($category_url=~m/\-?\s*c\s*(\d+)\s*\.\s*html/is)
-	{
-		$cat_id=$1;
-	}
-	
+	my $cat_id=$1 if($category_url=~m/\-?\s*c\s*(\d+)\s*\.\s*html/is);
 	my $Product_list_content = $utilityobject->Lwp_Get($category_url);
 	
-	my $char_url='http://www.zara.com/webapp/wcs/stores/servlet/CategoryFilterJSON?categoryId='.$cat_id.'&langId=-1&storeId=10706&filterCode=STATIC&ajaxCall=true';
 	# Formation of characteristic url for the produts under respective category(In filter).
+	my $char_url='http://www.zara.com/webapp/wcs/stores/servlet/CategoryFilterJSON?categoryId='.$cat_id.'&langId=-1&storeId=11719&filterCode=STATIC&ajaxCall=true';
 	
-	my $color_url='http://www.zara.com/webapp/wcs/stores/servlet/CategoryFilterJSON?categoryId='.$cat_id.'&langId=-1&storeId=10706&filterCode=DYNAMIC&ajaxCall=true';
 	# Formation of color url for the produts under respective category(In filter). 
+	my $color_url='http://www.zara.com/webapp/wcs/stores/servlet/CategoryFilterJSON?categoryId='.$cat_id.'&langId=-1&storeId=11719&filterCode=DYNAMIC&ajaxCall=true';
 
 	my $char_Cont = $utilityobject->Lwp_Get($char_url);
 	my $color_Cont = $utilityobject->Lwp_Get($color_url);
-			
+	
 	# Declaring required variables.
 	my ($prod_id,$product_url,$product_object_key);
-	
+
 	# Looping through to get product urls.
-	while($Product_list_content=~ m/<a\s*href='([^<]*?)'\s*[^<]*\s*class='item\s*gaProductDetailsLink'/igs) 
+	while($Product_list_content=~ m/<a\s*href\=\'([^<]*?)\'\s*[^<]*\s*class=\'item\s*gaProductDetailsLink\'/igs) 
 	{
 		$product_url = $1;
 		
 		# Pattern match to get the product id to remove duplicate product urls.
 		$prod_id=$1 if($product_url=~m/p\s*(\d+)\s*\.\s*html/is);
 		
-		# Insert Product values.
+		#Insert Product values.
 		if($hash_id{$prod_id} eq  '')
 		{
-			# Insert product url if url not exist.
+			#Insert product url if url not exist.
 			$product_object_key = $dbobject->SaveProduct($product_url,$robotname,$retailer_id,$Retailer_Random_String);
 			$hash_id{$prod_id}=$product_object_key;
 		}
 		else
 		{
-			# Assigning objectkey of already existed product's Objectkey and skip the url if exist and save the new product's tag information along with already existed product url's tag information.
+			#Assigning objectkey of already existed product's Objectkey and skip the url if exist and save the new product's tag information along with already existed product url's tag information.
 			$product_object_key=$hash_id{$prod_id};
 		}
 		
-		# Save the tag information of "Menu 1" if non-empty.
+		# Save the tag information of "Menu 1" if non-empty.		
 		$dbobject->SaveTag('Menu_1',$menu1,$product_object_key,$robotname,$Retailer_Random_String) if($menu1 ne '');  
 		
 		# Save the tag information of "Menu 2" if non-empty. 
@@ -164,9 +148,6 @@ sub Product_Collection
 		
 		# Save the tag information of "Menu 4" if non-empty. 
 		$dbobject->SaveTag('Menu_4',$menu4,$product_object_key,$robotname,$Retailer_Random_String) if($menu4 ne '');
-		
-		# Save the tag information of "Menu 5" if non-empty. 
-		$dbobject->SaveTag('Menu_5',$menu5,$product_object_key,$robotname,$Retailer_Random_String) if($menu5 ne '');
 		
 		# Committing the transaction.
 		$dbobject->commit();
@@ -182,6 +163,7 @@ sub charactertag() # Function definition to get characteristics and colour tag i
 	my $Jcont1=shift;
 	my $prod_id1=shift;
 	my $product_object_key1=shift;
+	
 	while($Jcont1=~m/{\s*\"\s*values\s*\"([\w\W]*?)\"\s*type\s*\"\s*\:\s*\"\s*([^>]*?)\s*\"\s*}/igs)  # Characteristics,Colour and quality block (In Filter in RHS).
 	{
 		my $Type1_blk=$1;
@@ -196,6 +178,7 @@ sub charactertag() # Function definition to get characteristics and colour tag i
 			my $name1;
 			
 			$name1=$1 if($Type_blk11=~m/\s*\"\s*name\s*\"\s*\:\s*\"([^\'\"]*?)\s*\"/is); # Getting tag name Eg. Characteristics or color.
+			
 			# Pattern match to get the sku id's(Product id's) block from the main block.
 			if($Type_blk11=~m/\"\s*skus\s*\"\s*\:([\w\W]*?\"\])/is)   
 			{
@@ -205,13 +188,16 @@ sub charactertag() # Function definition to get characteristics and colour tag i
 				while($Skus_id_blk1=~m/(?:\"|\')\s*([^\'\"]*?)\s*(?:\"|\')/igs)
 				{
 					my $Skuid1=$1;
+					
 					# Pattern match to get the tag information if product id in product url and sku id from the block is same.
 					if(($Skuid1 eq $prod_id1)||($Skuid1=~m/$prod_id1/))
 					{
 						$Type1=~s/features/characteristics/igs;
 						$Type1=~s/quality/qualities/igs;
+						
 						# Save the tag information into tag table.
 						$dbobject->SaveTag($Type1,$name1,$product_object_key1,$robotname,$Retailer_Random_String);
+						
 						# Committing the transaction.
 						$dbobject->commit();
 					}
@@ -221,8 +207,9 @@ sub charactertag() # Function definition to get characteristics and colour tag i
 	}
 }
 
-#################### For Dashboard #######################################
+# Sending information to logger that all the instaces completed.
+$logger->send("$robotname :: Instance Completed  :: $pid\n");
+# For Dashboard.
 $dbobject->Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'STOP',$robotname);
-#################### For Dashboard #######################################
-$logger->send("$robotname :: Instance Completed  :: $pid\n");	
+# For Dashboard.
 $dbobject->commit();

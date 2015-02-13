@@ -64,7 +64,7 @@ $dbobject->Save_mc_instance_Data($retailer_name,$retailer_id,$pid,$ip,'START',$r
 # Once script has started send a msg to logger.
 $logger->send("$robotname :: Instance Started :: $pid\n");
 
-my ($menu_1,$menu_2,$menu_3,$menu_4, $col_url);
+my ($menu_1,$menu_2,$menu_3,$menu_4, $menu_5, $col_url);
 my %hash_id;
 
 $menu_1=$ARGV[0];
@@ -75,22 +75,32 @@ if($ARGV[2]=~m/http\:\/\//is)
 	$col_url=$ARGV[2];
 	$menu_3='';
 	$menu_4='';
+	$menu_5='';	
 }
 elsif($ARGV[3]=~m/http\:\/\//is)
 {
 	$col_url=$ARGV[3];
 	$menu_3=$ARGV[2];
 	$menu_4='';
+	$menu_5='';	
 }
 elsif($ARGV[4]=~m/http\:\/\//is)
 {	
 	$col_url=$ARGV[4];
 	$menu_3=$ARGV[2];
-	$menu_4=$ARGV[3];	
+	$menu_4=$ARGV[3];
+	$menu_5='';	
+}
+elsif($ARGV[5]=~m/http\:\/\//is)
+{	
+	$col_url=$ARGV[5];
+	$menu_3=$ARGV[2];
+	$menu_4=$ARGV[3];
+	$menu_5=$ARGV[4];	
 }
 
 # Product Collection
-&Product_Collection($col_url,$menu_1,$menu_2,$menu_3,$menu_4);
+&Product_Collection($col_url,$menu_1,$menu_2,$menu_3,$menu_4,$menu_5);
 
 # Function definition to collect products.
 sub Product_Collection
@@ -100,6 +110,7 @@ sub Product_Collection
 	my $menu2=shift;
 	my $menu3=shift;
 	my $menu4=shift;
+	my $menu5=shift;
 	
 	my $cat_id;
 	 if($category_url=~m/\-?\s*c\s*(\d+)\s*\.\s*html/is)
@@ -153,6 +164,9 @@ sub Product_Collection
 		
 		# Save the tag information of "Menu 4" if non-empty. 
 		$dbobject->SaveTag('Menu_4',$menu4,$product_object_key,$robotname,$Retailer_Random_String) if($menu4 ne '');
+		
+		# Save the tag information of "Menu 5" if non-empty. 
+		$dbobject->SaveTag('Menu_5',$menu5,$product_object_key,$robotname,$Retailer_Random_String) if($menu5 ne '');
 		
 		# Committing the transaction.
 		$dbobject->commit();

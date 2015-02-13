@@ -75,7 +75,7 @@ if($content=~m/<li\s*class\=\"$ARGV[0]\">\s*([\w\W]*?)(?:<li\s*class\=\"category
 	my $block1 = $1;
 	
 	next if($menu1 =~ m/musthaves|beauty|home|Tory\s*daily/is);
-
+		
 	if($block1 =~ m/class\=\"group\-hdr\">\s*([^>]*?)\s*<([\w\W]*?)<\/ul>/is)
 	{
 		while($block1 =~ m/class\=\"group\-hdr\">\s*([^>]*?)\s*<([\w\W]*?)<\/ul>/igs)
@@ -89,7 +89,7 @@ if($content=~m/<li\s*class\=\"$ARGV[0]\">\s*([\w\W]*?)(?:<li\s*class\=\"category
 			{
 				my $purl = $1;
 				my $menu3 = $2;
-
+								
 				next if(($menu1!~m/Clothing/is)&&($menu3=~m/Workweek\s*chic/is));
 
 				my $menu3_content = $utilityobject->Lwp_Get($purl);
